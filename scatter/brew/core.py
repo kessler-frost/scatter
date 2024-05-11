@@ -1,9 +1,9 @@
 from typing import Callable
-from scatter.earth import store, retrieve, clear_cache
+from scatter.earth import store, retrieve, clear_cache, list_functions
 from functools import wraps
 
 
-__all__ = ["scatter", "assemble", "clear_cache"]
+__all__ = ["scatter", "assemble", "clear_cache", "list_functions"]
 
 
 def scatter(func: Callable) -> Callable:
