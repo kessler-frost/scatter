@@ -1,6 +1,6 @@
 from diskcache import FanoutCache
-from block_encoder_decoder import encoder
-from node_struct import Node
+from earth.function_enc_dec import encoder
+from earth.node_struct import Node
 
 
 CACHE_NAME = "disk_cache"

@@ -1,7 +1,7 @@
 import msgspec
 import cloudpickle as pickle
 from typing import Callable
-from node_struct import Node
+from earth.node_struct import Node
 
 
 def serialize_function(func: Callable) -> bytes:

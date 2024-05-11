@@ -1,5 +1,5 @@
 from diskcache import FanoutCache
-from block_encoder_decoder import decoder
+from earth.function_enc_dec import decoder
 
 CACHE_NAME = "disk_cache"
 
@@ -8,6 +8,7 @@ NUM = 100_000
 
 if __name__ == "__main__":
 
+    # Using FanoutCache so that it can be accessed from multiple processes
     cache = FanoutCache(CACHE_NAME)
 
     a = 1

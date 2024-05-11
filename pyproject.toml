@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "scatter"
+dynamic = ["version", "dependencies"]
+
+# [project.scripts]
+# covalent-recipes = "covalent_recipes.cli.main:app"
+
+
+[tool.setuptools.packages.find]
+exclude = ["*.ipynb", "**/*.ipynb"]
+
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}
+dependencies = {file = "requirements.txt"}
