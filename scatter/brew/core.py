@@ -1,9 +1,11 @@
-from typing import Callable
-from scatter.earth import store, retrieve, clear_cache, list_functions
 from functools import wraps
+from typing import Callable, Union
 
+from scatter.earth import (clear_cache, list_functions, retrieve, store,
+                           delete, rollback)
+from scatter.earth.structure import Function
 
-__all__ = ["scatter", "assemble", "clear_cache", "list_functions"]
+__all__ = ["scatter", "assemble", "clear_cache", "list_functions", "vaporize", "rollback"]
 
 
 def scatter(func: Callable) -> Callable:
@@ -16,7 +18,18 @@ def scatter(func: Callable) -> Callable:
     return wrapper
 
 
-def assemble(func_name: str) -> Callable:
-    function_struct = retrieve(func_name)
-    print(function_struct)
-    return function_struct.callable_
+def assemble(func_name: str, struct: bool = False) -> Union[Callable, Function]:
+    try:
+        function_struct = retrieve(func_name)
+        if struct:
+            return function_struct
+        return function_struct.callable_
+    except KeyError:
+        raise KeyError(f"Function {func_name} not found.") from None
+
+
+def vaporize(func_name: str):
+    try:
+        delete(func_name)
+    except KeyError:
+        raise KeyError(f"Function {func_name} not found.") from None
