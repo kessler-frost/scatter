@@ -1,4 +1,4 @@
-from scatter.brew.core import scatter
+from scatter.brew import scatter
 import random
 
 

@@ -1,11 +1,12 @@
 from functools import wraps
 from typing import Callable, Union
 
-from scatter.earth import (clear_cache, list_functions, retrieve, store,
+from scatter.earth import (clear_cache, show_versions, retrieve, store,
                            delete, rollback)
 from scatter.earth.structure import Function
 
-__all__ = ["scatter", "assemble", "clear_cache", "list_functions", "vaporize", "rollback"]
+
+__all__ = ["scatter", "assemble", "clear_cache", "show_versions", "vaporize", "rollback"]
 
 
 def scatter(func: Callable) -> Callable:

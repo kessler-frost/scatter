@@ -1,11 +1,11 @@
-from scatter.brew.core import assemble, list_functions
+from scatter.brew import assemble, show_versions
 
 # def my_func(a: int, b: int) -> int:
 #     return a + b
 
 
 if __name__ == '__main__':
-    print(list_functions())
+    print(show_versions())
 
     my_func = assemble("my_func")
 

@@ -1,4 +1,4 @@
-from .storage import (clear_cache, list_functions, retrieve, rollback, store,
+from .storage import (clear_cache, show_versions, retrieve, rollback, store,
                       delete)
 
-__all__ = ["store", "retrieve", "clear_cache", "list_functions", "delete", "rollback"]
+__all__ = ["store", "retrieve", "clear_cache", "show_versions", "delete", "rollback"]

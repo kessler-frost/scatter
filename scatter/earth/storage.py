@@ -33,8 +33,8 @@ def store(func: Callable):
     print(f"Index: {dict(index.items())}")
 
 
-def list_functions():
-    return list(index.keys())
+def show_versions() -> dict:
+    return dict(index.items())
 
 
 def retrieve(func_name: str) -> Function:
