@@ -5,8 +5,8 @@ from node_struct import Node
 
 CACHE_NAME = "disk_cache"
 
-# NUM = 100_000
-NUM = 1
+NUM = 100_000
+# NUM = 1
 
 
 if __name__ == "__main__":
