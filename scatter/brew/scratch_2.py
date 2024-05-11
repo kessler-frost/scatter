@@ -11,5 +11,5 @@ if __name__ == '__main__':
     my_func = assemble("my_func")
 
     res = []
-    for i in range(100_000):
+    for i in range(10):
         res.append(my_func(i * 2, i))

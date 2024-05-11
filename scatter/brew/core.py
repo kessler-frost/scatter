@@ -17,4 +17,6 @@ def scatter(func: Callable) -> Callable:
 
 
 def assemble(func_name: str) -> Callable:
-    return retrieve(func_name)
+    function_struct = retrieve(func_name)
+    print(function_struct)
+    return function_struct.callable_

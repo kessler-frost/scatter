@@ -38,9 +38,9 @@ def list_functions():
     return list(index.keys())
 
 
-def retrieve(func_name: str) -> Callable:
+def retrieve(func_name: str) -> Function:
     encoded_func = cache.get(func_name)
-    return decoder.decode(encoded_func).callable_
+    return decoder.decode(encoded_func)
 
 
 def clear_cache():
