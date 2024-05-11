@@ -1,7 +1,7 @@
 import msgspec
 import cloudpickle as pickle
 from typing import Callable
-from earth.node_struct import Node
+from scatter.earth.structure import Function
 
 
 def serialize_function(func: Callable) -> bytes:
@@ -13,4 +13,4 @@ def deserialize_function(type: Callable, obj: bytes) -> Callable:
 
 
 encoder = msgspec.msgpack.Encoder(enc_hook=serialize_function)
-decoder = msgspec.msgpack.Decoder(type=Node, dec_hook=deserialize_function)
+decoder = msgspec.msgpack.Decoder(type=Function, dec_hook=deserialize_function)

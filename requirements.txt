@@ -1,5 +1,6 @@
+cloudpickle
 diskcache
 hapless
 msgspec
+mpire
 pyzmq
-cloudpickle
