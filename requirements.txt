@@ -4,3 +4,4 @@ hapless
 msgspec
 mpire
 pyzmq
+# icecream - for logging maybe?

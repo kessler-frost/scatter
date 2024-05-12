@@ -1,35 +1,51 @@
-from diskcache import FanoutCache
-from scatter.earth.enc_dec import encoder, decoder
-from typing import Callable
-from pathlib import Path
-from scatter.earth.structure import Function
+import typing
+
+import cloudpickle as pickle
+import msgspec
+
+from scatter.earth.cache import cache, index
+from scatter.earth.key_helpers import (func_name_to_callable_key,
+                                       func_name_to_struct_key)
+
+# -------------------------- Encoder / Decoder --------------------------
+
+encoder = msgspec.msgpack.Encoder()
+decoder = msgspec.msgpack.Decoder()
 
 
-cache_dir = str(Path(__file__).parent / "disk_cache")
-index_name = "versions_index"
-
-cache = FanoutCache(cache_dir)
-index = cache.index(index_name)
+def encode_callable(func: typing.Callable) -> bytes:
+    return pickle.dumps(func)
 
 
-# TODO: Look into memoizing the store and retrieve functions?
+def decode_callable(obj: bytes) -> typing.Callable:
+    return pickle.loads(obj)
 
-def store(func: Callable):
+
+# -------------------------- Storage / Retrieval --------------------------
+
+def store(structured_func: msgspec.Struct, func_callable: typing.Callable):
+
+    # Get the name of the function
+    func_name = func_callable.__name__
+
     # Get the version of the function from the index
-    new_version = index.get(func.__name__, 0) + 1
+    new_version = index.get(func_name, 0) + 1
 
-    # Create a structured function with Function object
-    structured_func = Function(name=func.__name__, version=new_version, callable_=func)
+    # Store the encoded function struct in the cache
+    struct_key = func_name_to_struct_key(func_name, new_version)
+    encoded_func_struct = encoder.encode(structured_func)
+    cache[struct_key] = encoded_func_struct
 
-    # Encode the Function object
-    encoded_func = encoder.encode(structured_func)
-
-    # Store the encoded function in the cache
-    cache[f"{structured_func.name}-{new_version}"] = encoded_func
+    # Store the callable in the cache
+    callable_key = func_name_to_callable_key(func_name, new_version)
+    encoded_callable = encode_callable(func_callable)
+    cache[callable_key] = encoded_callable
 
     # Update the index with the new version
-    index[structured_func.name] = new_version
-    print(f"Version: {new_version} of {structured_func.name} stored.")
+    index[func_name] = new_version
+
+    # Print the version and index items
+    print(f"Version: {new_version} of {func_name} stored.")
     print(f"Index: {dict(index.items())}")
 
 
@@ -37,15 +53,30 @@ def show_versions() -> dict:
     return dict(index.items())
 
 
-def retrieve(func_name: str) -> Function:
-    encoded_func = cache[f"{func_name}-{index[func_name]}"]
-    return decoder.decode(encoded_func)
+def retrieve_struct(func_name: str) -> msgspec.Struct:
+    version = index[func_name]
+    struct_key = func_name_to_struct_key(func_name, version)
 
+    encoded_struct = cache[struct_key]
+    return decoder.decode(encoded_struct)
+
+
+def retrieve_callable(func_name: str) -> typing.Callable:
+    version = index[func_name]
+    callable_key = func_name_to_callable_key(func_name, version)
+
+    encoded_callable = cache[callable_key]
+    return decode_callable(encoded_callable)
+
+
+# -------------------------- Deletion / Rollback --------------------------
 
 def delete(func_name: str):
     version = index[func_name]
 
-    del cache[f"{func_name}-{version}"]
+    for i in range(1, version + 1):
+        del cache[func_name_to_struct_key(func_name, i)]
+        del cache[func_name_to_callable_key(func_name, i)]
     del index[func_name]
 
 
@@ -54,7 +85,7 @@ def rollback(func_name: str):
 
     if version > 1:
         index[func_name] = version - 1
-        del cache[f"{func_name}-{version}"]
+        del cache[func_name_to_struct_key(func_name, version)]
 
 
 def clear_cache():

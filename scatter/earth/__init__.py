@@ -1,4 +1,14 @@
-from .storage import (clear_cache, show_versions, retrieve, rollback, store,
-                      delete)
+from .storage import (clear_cache, delete, retrieve_callable, retrieve_struct,
+                      rollback, show_versions, store)
+from .structure import create_struct
 
-__all__ = ["store", "retrieve", "clear_cache", "show_versions", "delete", "rollback"]
+__all__ = [
+    "clear_cache",
+    "delete",
+    "retrieve_callable",
+    "retrieve_struct",
+    "rollback",
+    "show_versions",
+    "store",
+    "create_struct",
+]
