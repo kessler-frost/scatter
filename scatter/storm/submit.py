@@ -1,35 +1,18 @@
 from mpire import WorkerPool
-import typing
-from scatter.earth.storage import cache, index, retrieve_struct, decode
-from scatter.earth.key_helpers import func_name_to_callable_key
-import msgspec
+from functools import wraps
+from scatter.earth.storage import retrieve_callable
+import cloudpickle as pickle
 
 
 pool = WorkerPool(n_jobs=4)
 
 
-@cache.memoize()
-def generate_decoder(function_struct: msgspec.Struct):
-    decoder = msgspec.msgpack.Decoder(type=function_struct, dec_hook=decode)
-    return decoder
+def submit_job(func_name: str):
 
+    function_callable = pickle.dumps(retrieve_callable(func_name))
 
-def create_job(encoded_struct_obj: bytes, func_name: str) -> typing.Callable:
+    @wraps(function_callable)
+    def wrapper(*args, **kwargs):
+        return pool.apply(function_callable, args, kwargs)
 
-    encoded_struct = retrieve_struct(func_name)
-    function_struct = decode(encoded_struct)
-
-    decoder = generate_decoder(function_struct)
-
-    struct_obj = decoder.decode(encoded_struct_obj)
-
-    function_callable = decode(cache[func_name_to_callable_key(func_name, version=index[func_name])])
-
-    kwargs = {f: getattr(struct_obj, f) for f in struct_obj.__struct_fields__}
-
-    return function_callable(**kwargs)
-
-
-def submit_job(encoded_struct_obj: bytes, func_name: str):
-    job = create_job(encoded_struct_obj, func_name)
-    return pool.apply(job)
+    return wrapper
