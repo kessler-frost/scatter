@@ -25,14 +25,14 @@ msgspec_encoder = msgspec.msgpack.Encoder(enc_hook=encode)
 
 # -------------------------- Storage / Retrieval --------------------------
 
-def store(encoded_struct: bytes, encoded_callable: bytes, func_name: str):
+def store(encoded_callable: bytes, func_name: str):
 
     # Get the version of the function from the index
     new_version = index.get(func_name, 0) + 1
 
     # Store the encoded function struct in the cache
-    struct_key = func_name_to_struct_key(func_name, new_version)
-    cache[struct_key] = encoded_struct
+    # struct_key = func_name_to_struct_key(func_name, new_version)
+    # cache[struct_key] = encoded_struct
 
     # Store the callable in the cache
     callable_key = func_name_to_callable_key(func_name, new_version)
@@ -42,8 +42,8 @@ def store(encoded_struct: bytes, encoded_callable: bytes, func_name: str):
     index[func_name] = new_version
 
     # Print the version and index items
-    print(f"Version: {new_version} of {func_name} stored.")
-    print(f"Index: {dict(index.items())}")
+    # print(f"Version: {new_version} of {func_name} stored.")
+    # print(f"Index: {dict(index.items())}")
 
 
 def show_versions() -> dict:

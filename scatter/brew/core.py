@@ -1,25 +1,24 @@
 from functools import wraps
-from typing import Callable, Union
+from typing import Callable
 
 import msgspec
 
 from scatter.earth.storage import delete, retrieve_struct, encode, decode, store, msgspec_encoder
 from scatter.earth.structure import create_struct
-
-# TODO: Define it in storm
-submit = ...
+from scatter.storm.submit import submit_job as submit
 
 
 def scatter(func: Callable) -> Callable:
 
-    function_struct = create_struct(func)
-    encoded_struct = encode(function_struct)
+    # function_struct = create_struct(func)
+    # encoded_struct = encode(function_struct)
 
     encoded_callable = encode(func)
 
     func_name = func.__name__
 
-    store(encoded_struct, encoded_callable, func_name)
+    # store(encoded_struct, encoded_callable, func_name)
+    store(encoded_callable, func_name)
 
     @wraps(func)
     def wrapper(*args, **kwargs):

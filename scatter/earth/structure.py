@@ -23,6 +23,4 @@ def create_struct(function: typing.Callable) -> msgspec.Struct:
         msg_spec_hints,
     )
 
-    print(Function.__name__)
-
     return Function

@@ -22,6 +22,7 @@ def func_name_to_struct_key(func_name: str, version: int) -> str:
     """
     my_func -> "Function/my_func/1"
     """
+    version = str(version)
 
     return SEPARATOR.join([func_name_to_struct_name(func_name), version])
 
@@ -31,6 +32,7 @@ def func_name_to_callable_key(func_name: str, version: int) -> str:
     """
     my_func -> "callable/my_func/1"
     """
+    version = str(version)
 
     return SEPARATOR.join([CALLABLE_PREFIX, func_name, version])
 
@@ -51,6 +53,7 @@ def struct_name_to_struct_key(struct_name: str, version: int) -> str:
     """
     Function/my_func -> Function/my_func/1
     """
+    version = str(version)
 
     return SEPARATOR.join([struct_name, version])
 
@@ -60,6 +63,7 @@ def struct_name_to_callable_key(struct_name: str, version: int) -> str:
     """
     Function/my_func -> callable/my_func/1
     """
+    version = str(version)
 
     return SEPARATOR.join([CALLABLE_PREFIX, struct_name_to_func_name(struct_name), version])
 
