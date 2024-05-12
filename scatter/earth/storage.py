@@ -9,36 +9,33 @@ from scatter.earth.key_helpers import (func_name_to_callable_key,
 
 # -------------------------- Encoder / Decoder --------------------------
 
-encoder = msgspec.msgpack.Encoder()
-decoder = msgspec.msgpack.Decoder()
+
+def encode(obj: typing.Union[msgspec.Struct, typing.Callable, msgspec.inspect.CustomType]) -> bytes:
+    return pickle.dumps(obj)
 
 
-def encode_callable(func: typing.Callable) -> bytes:
-    return pickle.dumps(func)
-
-
-def decode_callable(obj: bytes) -> typing.Callable:
+def decode(obj: bytes) -> typing.Union[msgspec.Struct, typing.Callable, msgspec.inspect.CustomType]:
     return pickle.loads(obj)
+
+
+msgspec_encoder = msgspec.msgpack.Encoder(enc_hook=encode)
+
+# Dynamically create the decoder since it requires the dynamically created msgspec.Struct class
 
 
 # -------------------------- Storage / Retrieval --------------------------
 
-def store(structured_func: msgspec.Struct, func_callable: typing.Callable):
-
-    # Get the name of the function
-    func_name = func_callable.__name__
+def store(encoded_struct: bytes, encoded_callable: bytes, func_name: str):
 
     # Get the version of the function from the index
     new_version = index.get(func_name, 0) + 1
 
     # Store the encoded function struct in the cache
     struct_key = func_name_to_struct_key(func_name, new_version)
-    encoded_func_struct = encoder.encode(structured_func)
-    cache[struct_key] = encoded_func_struct
+    cache[struct_key] = encoded_struct
 
     # Store the callable in the cache
     callable_key = func_name_to_callable_key(func_name, new_version)
-    encoded_callable = encode_callable(func_callable)
     cache[callable_key] = encoded_callable
 
     # Update the index with the new version
@@ -53,20 +50,24 @@ def show_versions() -> dict:
     return dict(index.items())
 
 
-def retrieve_struct(func_name: str) -> msgspec.Struct:
+def retrieve_struct(func_name: str) -> bytes:
     version = index[func_name]
     struct_key = func_name_to_struct_key(func_name, version)
 
-    encoded_struct = cache[struct_key]
-    return decoder.decode(encoded_struct)
+    # Return the encoded struct from the cache
+    return cache[struct_key]
 
 
-def retrieve_callable(func_name: str) -> typing.Callable:
+def retrieve_callable(func_name: str) -> bytes:
+    """
+    To be used inside a worker to retrieve the encoded callable from the cache.
+    """
+
     version = index[func_name]
     callable_key = func_name_to_callable_key(func_name, version)
 
-    encoded_callable = cache[callable_key]
-    return decode_callable(encoded_callable)
+    # Return the encoded callable from the cache
+    return cache[callable_key]
 
 
 # -------------------------- Deletion / Rollback --------------------------

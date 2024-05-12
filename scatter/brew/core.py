@@ -1,19 +1,25 @@
 from functools import wraps
-import msgspec
 from typing import Callable, Union
 
-from scatter.earth import (clear_cache, show_versions, retrieve_struct, store,
-                           delete, rollback)
+import msgspec
 
+from scatter.earth.storage import delete, retrieve_struct, encode, decode, store, msgspec_encoder
+from scatter.earth.structure import create_struct
 
-__all__ = ["scatter", "assemble", "clear_cache", "show_versions", "vaporize", "rollback"]
+# TODO: Define it in storm
+submit = ...
 
 
 def scatter(func: Callable) -> Callable:
 
-    structured_func = create_struct(func)
+    function_struct = create_struct(func)
+    encoded_struct = encode(function_struct)
 
-    store(func)
+    encoded_callable = encode(func)
+
+    func_name = func.__name__
+
+    store(encoded_struct, encoded_callable, func_name)
 
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -21,14 +27,19 @@ def scatter(func: Callable) -> Callable:
     return wrapper
 
 
-def assemble(func_name: str, struct: bool = False) -> Union[Callable, msgspec.Struct]:
-    try:
-        function_struct = retrieve_struct(func_name)
-        if struct:
-            return function_struct
-        return function_struct.callable_
-    except KeyError:
-        raise KeyError(f"Function {func_name} not found.") from None
+def make_callable(func_name: str) -> Callable:
+    encoded_struct = retrieve_struct(func_name)
+    function_struct: msgspec.Struct = decode(encoded_struct)
+
+    # TODO: Make it look like the actual function - using __signature__ and function_struct
+    def wrapper(*args, **kwargs):
+        struct_obj = function_struct(*args, **kwargs)
+        encoded_struct_obj = msgspec_encoder.encode(struct_obj)
+        return submit(encoded_struct_obj, func_name)
+
+    wrapper.__name__ = func_name
+
+    return wrapper
 
 
 def vaporize(func_name: str):
