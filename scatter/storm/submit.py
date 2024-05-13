@@ -23,7 +23,7 @@ if __name__ == "__main__":
         with WorkerPool(n_jobs=4) as pool:
             #  Wait for next request from client
             message = socket.recv_serialized(deserialize_frames)
-            print("Received request:", message)
+            # print("Received request:", message)
 
             func_name, args, kwargs = message
             result = pool.apply(partial(job, func_name), args, kwargs)

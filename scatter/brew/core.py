@@ -9,7 +9,6 @@ import zmq
 context = zmq.Context()
 
 #  Socket to talk to server
-print("Connecting to hello world server…")
 socket = context.socket(zmq.REQ)
 socket.connect("tcp://localhost:5555")
 
@@ -34,7 +33,7 @@ def make_callable(func_name: str) -> Callable:
 
         #  Get the reply.
         message = socket.recv_serialized(deserialize_frames)
-        print("Received reply", message)
+        # print("Received reply", message)
         return message
 
     return wrapper
