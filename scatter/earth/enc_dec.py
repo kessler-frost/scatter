@@ -3,6 +3,19 @@ import cloudpickle as pickle
 import typing
 
 
+# TODO: Also create a Result struct
+
+
+def deserialize_frames(frames):
+    return pickle.loads(b''.join(frames))
+
+
+def serialize_frames(obj):
+    serialized = pickle.dumps(obj)
+    frames = [serialized[i: i + 4] for i in range(0, len(serialized), 4)]
+    return frames
+
+
 def create_struct(function: typing.Callable) -> msgspec.Struct:
 
     # Get standard type hints
@@ -24,8 +37,14 @@ def create_struct(function: typing.Callable) -> msgspec.Struct:
 
     return Function
 
+
 def enc_hook(obj: typing.Any) -> bytes:
     return pickle.dumps(obj)
 
+
 def dec_hook(type: typing.Any, obj: bytes) -> typing.Any:
     return pickle.loads(obj)
+
+
+def generate_encoder():
+    return msgspec.json.Encoder(enc_hook=enc_hook)

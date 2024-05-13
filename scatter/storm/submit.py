@@ -1,15 +1,10 @@
 from mpire import WorkerPool
-from functools import wraps, partial, lru_cache
+from functools import partial
 from scatter.earth.storage import retrieve_callable
+from scatter.earth.enc_dec import deserialize_frames, serialize_frames
 import cloudpickle as pickle
 import zmq
 
-
-#
-#   Hello World server in Python
-#   Binds REP socket to tcp://*:5555
-#   Expects b"Hello" from client, replies with b"World"
-#
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)
@@ -22,30 +17,15 @@ def job(func_name: str, *args, **kwargs):
     return func(*args, **kwargs)
 
 
-def submit_job(func_name: str, pool: WorkerPool, *args, **kwargs):
-    return pool.apply(partial(job, func_name), args, kwargs)
+if __name__ == "__main__":
 
+    while True:
+        with WorkerPool(n_jobs=4) as pool:
+            #  Wait for next request from client
+            message = socket.recv_serialized(deserialize_frames)
+            print("Received request:", message)
 
-while True:
-    with WorkerPool(n_jobs=4) as pool:
-        #  Wait for next request from client
-        message = socket.recv_string()
-        print("Received request:", message)
+            func_name, args, kwargs = message
+            result = pool.apply(partial(job, func_name), args, kwargs)
 
-        submit_job
-
-    #  Send reply back to client
-
-
-
-if __name__ == '__main__':
-
-    pool = get_pool()
-
-    def task(a, b, c, d):
-        return a + b + c + d
-
-    # with WorkerPool(n_jobs=1) as pool:
-    result = pool.apply(task, args=(1, 2), kwargs={'d': 4, 'c': 3})
-    print(result)
-    # pool.join()
+            socket.send_serialized(result, serialize_frames)
