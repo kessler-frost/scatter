@@ -19,7 +19,11 @@ def scatter(func: Callable) -> Callable:
 
 def make_callable(func_name: str) -> Callable:
     # TODO: Make it look like the actual function - using __signature__ and function_struct
-    return submit(func_name)
+
+    def wrapper(*args, **kwargs):
+        return submit(func_name, *args, **kwargs)
+
+    return wrapper
 
 
 def vaporize(func_name: str):
