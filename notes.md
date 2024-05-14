@@ -5,6 +5,7 @@
 - <https://trio.readthedocs.io/en/stable/awesome-trio-libraries.html>
 - <https://github.com/richardsheridan/trio-parallel>
 - <https://anyio.readthedocs.io/en/stable/basics.html#running-async-programs>
+- <https://redis.readthedocs.io/en/stable/index.html>
 
 ## Techstack (transient)
 

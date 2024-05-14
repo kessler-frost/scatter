@@ -1,7 +1,5 @@
 cloudpickle
-diskcache
-hapless
-msgspec
-mpire
-pyzmq
+# diskcache - alternatice to redis if needed
+# hapless - for process management
+zeroapi
 # icecream - for logging maybe?
