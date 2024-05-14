@@ -1,6 +1,7 @@
-import msgspec
 from typing import Any, Type
+
 import cloudpickle as pickle
+import msgspec
 
 
 def serialize_any(obj: Any) -> bytes:

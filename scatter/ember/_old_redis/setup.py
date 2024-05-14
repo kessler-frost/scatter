@@ -1,8 +1,8 @@
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
 
-from scatter.constants import (PRIO_HI, PRIO_MED, REDIS_DB, REDIS_HOST,
-                               REDIS_PASSWORD, REDIS_PORT)
+from scatter.ember.constants import (PRIO_HI, PRIO_MED, REDIS_DB, REDIS_HOST,
+                                     REDIS_PASSWORD, REDIS_PORT)
 
 
 redis_broker = RedisBroker(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)

@@ -1,5 +1,6 @@
+from typing import Any, Dict, Optional, get_type_hints
+
 import msgspec
-from typing import Dict, Any, Optional, get_type_hints
 
 
 def create_struct_class_from_type_hints(

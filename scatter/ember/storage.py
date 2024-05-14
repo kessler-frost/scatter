@@ -1,5 +1,4 @@
-from scatter.earth.cache_init import redis_client
-
+from scatter.ember.cache_init import redis_client
 
 # TODO: Use redis_client's pipeline for performance improvement when doing multiple operations
 
