@@ -1,12 +1,18 @@
-from zero import ZeroClient
-from typing import Callable, get_type_hints
-from scatter.brew.constants import ZERO_SERVER_HOST, ZERO_SERVER_PORT
+import logging
 from functools import wraps
-from scatter.earth.encoder_decoder import serialize_any, deserialize_any, encoder, generate_decoder
-from scatter.earth.structures import Function, FunctionExecute, Params
-import shortuuid
-from scatter.earth.struct_creation import create_struct_class_from_type_hints
+from typing import Callable, get_type_hints
 
+import shortuuid
+from zero import ZeroClient
+
+from scatter.brew.constants import ZERO_SERVER_HOST, ZERO_SERVER_PORT
+from scatter.earth.encoder_decoder import (deserialize_any, encoder,
+                                           generate_decoder, serialize_any)
+from scatter.earth.struct_creation import create_struct_class_from_type_hints
+from scatter.earth.structures import Function, FunctionExecute, Params
+
+# Set the logging level to ERROR to avoid unnecessary logs from the Zero library
+logging.getLogger().setLevel(logging.ERROR)
 
 zero_client = ZeroClient(host=ZERO_SERVER_HOST, port=ZERO_SERVER_PORT)
 
