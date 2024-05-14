@@ -9,10 +9,11 @@ from scatter.ember.storage import (delete_params, retrieve_callable,
                                    retrieve_params, retrieve_type_hints,
                                    store_callable, store_params,
                                    store_type_hints)
+from scatter.void.constants import ZERO_SERVER_HOST, ZERO_SERVER_PORT
 
 # TODO: Use redis_client's pipeline for performance improvement when doing multiple operations
 
-app = ZeroServer(port=4242)
+app = ZeroServer(host=ZERO_SERVER_HOST, port=ZERO_SERVER_PORT)
 
 
 @app.register_rpc
