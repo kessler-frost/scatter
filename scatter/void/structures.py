@@ -1,6 +1,6 @@
 import msgspec
 
-# TODO: Can use `array_like=True` to improve performance
+# TODO: Can use `array_like=True` in the Struct definition to improve performance
 
 
 class Function(msgspec.Struct):

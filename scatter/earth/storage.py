@@ -1,6 +1,4 @@
 from scatter.earth.cache_init import redis_client
-from scatter.earth.encoder_decoder import deserialize_any
-from typing import Dict, Any
 
 
 # TODO: Use redis_client's pipeline for performance improvement when doing multiple operations
