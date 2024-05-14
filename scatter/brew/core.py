@@ -15,7 +15,7 @@ def scatter(func: Callable) -> Callable:
 
     function_struct = Function(
         name=func.__name__,
-        encoded_callable_=serialize_any(func),
+        encoded_callable=serialize_any(func),
         encoded_type_hints=serialize_any(get_type_hints(func)),
     )
 
@@ -65,6 +65,6 @@ def make_callable(func_name: str) -> Callable:
 
         result = generate_decoder(result_struct_class).decode(encoded_result)
 
-        return result
+        return result.result
 
     return wrapper

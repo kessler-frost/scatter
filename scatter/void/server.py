@@ -18,9 +18,13 @@ app = ZeroServer(host=ZERO_SERVER_HOST, port=ZERO_SERVER_PORT)
 
 @app.register_rpc
 def scatter_function(function_: Function) -> None:
-    name = function_.name
-    store_callable(name, function_.encoded_callable_)
-    store_type_hints(name, function_.encoded_type_hints)
+
+    name = function_["name"]
+    encoded_callable = function_["encoded_callable"]
+    encoded_type_hints = function_["encoded_type_hints"]
+
+    store_callable(name, encoded_callable)
+    store_type_hints(name, encoded_type_hints)
 
 
 @app.register_rpc
@@ -30,31 +34,42 @@ def get_type_hints(function_name: str) -> bytes:
 
 @app.register_rpc
 def scatter_params(params: Params) -> None:
-    store_params(params.message_id, params.encoded_params)
+
+    message_id = params["message_id"]
+    encoded_params = params["encoded_params"]
+
+    store_params(message_id, encoded_params)
 
 
 # NOTE: Only place where we use the `decoder` object - i.e. we need the dependencies
 @app.register_rpc
 def execute_function(function_execute: FunctionExecute) -> bytes:
+
+    function_name = function_execute["function_name"]
+    message_id = function_execute["message_id"]
+
     # The typing has been verified on the client side already
     # thus, we can safely decode the params without worrying about their type
 
-    type_hints = deserialize_any(None, retrieve_type_hints(function_execute.function_name))
+    type_hints = deserialize_any(None, retrieve_type_hints(function_name))
     params_struct_class = create_struct_class_from_type_hints(
-        function_execute.function_name, type_hints, "ParamsStruct"
+        function_name, type_hints, "ParamsStruct"
     )
 
-    params_struct_obj = generate_decoder(params_struct_class).decode(retrieve_params(function_execute.message_id))
+    params_struct_obj = generate_decoder(params_struct_class).decode(retrieve_params(message_id))
     params_dict = create_params_dict_from_struct(params_struct_obj)
 
-    function = deserialize_any(retrieve_callable(function_execute.function_name))
+    # Remove the return key from the params_dict
+    params_dict.pop("return")
+
+    function = deserialize_any(None, retrieve_callable(function_name))
 
     result = function(**params_dict)
 
-    delete_params(function_execute.message_id)
+    delete_params(message_id)
 
     result_struct_class = create_struct_class_from_type_hints(
-        function_execute.function_name, {"result": type_hints["return"]}, "ResultStruct"
+        function_name, {"result": type_hints["return"]}, "ResultStruct"
     )
 
     result_struct_obj = result_struct_class(result=result)
@@ -62,4 +77,5 @@ def execute_function(function_execute: FunctionExecute) -> bytes:
 
 
 if __name__ == "__main__":
+    print("Server started running...")
     app.run()

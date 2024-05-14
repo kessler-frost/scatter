@@ -5,7 +5,7 @@ import msgspec
 
 class Function(msgspec.Struct):
     name: str
-    encoded_callable_: bytes
+    encoded_callable: bytes
     encoded_type_hints: bytes
 
 
