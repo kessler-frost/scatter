@@ -1,23 +1,25 @@
 import dramatiq
-
 from dramatiq.brokers.redis import RedisBroker
 
+from scatter.constants import (PRIO_HI, PRIO_MED, REDIS_DB, REDIS_HOST,
+                               REDIS_PASSWORD, REDIS_PORT)
 
-redis_broker = RedisBroker(host="127.0.0.1", port=6379, db=0)
+
+redis_broker = RedisBroker(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)
 dramatiq.set_broker(redis_broker)
 
 
 type_hint_actor_options = {
     "actor_name": "type_hint_actor",
     "queue_name": "type_hint_queue",
-    "priority": 1,
+    "priority": PRIO_HI,
 }
 
 
 task_execution_actor_options = {
     "actor_name": "task_execution_actor",
     "queue_name": "task_execution_queue",
-    "priority": 2,
+    "priority": PRIO_MED,
 }
 
 
