@@ -4,3 +4,4 @@ cloudpickle
 python-redis-cache
 zeroapi
 # icecream - for logging maybe?
+shortuuid

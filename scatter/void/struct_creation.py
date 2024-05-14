@@ -2,7 +2,12 @@ import msgspec
 from typing import Dict, Any, Optional, get_type_hints
 
 
-def create_struct_from_type_hints(func_name: str, type_hints: Dict[str, Any]) -> msgspec.Struct:
+# TODO: Can use `array_like=True` to improve performance
+
+
+def create_struct_class_from_type_hints(
+        func_name: str, type_hints: Dict[str, Any], prefix: str = "Struct"
+) -> msgspec.Struct.__class__:
 
     # This will make it a list of tuples - (name, type)
     msg_spec_hints = list(type_hints.items())
@@ -13,12 +18,19 @@ def create_struct_from_type_hints(func_name: str, type_hints: Dict[str, Any]) ->
 
     # Create struct
     Struct = msgspec.defstruct(
-        f"Struct_{func_name}",
+        f"{prefix}_{func_name}",
         msg_spec_hints,
     )
 
     return Struct
 
 
-def create_struct_from_callable(func: callable) -> msgspec.Struct:
-    return create_struct_from_type_hints(func.__name__, get_type_hints(func))
+def create_params_struct_class_from_callable(func: callable) -> msgspec.Struct.__class__:
+    return create_struct_class_from_type_hints(func.__name__, get_type_hints(func), "ParamsStruct")
+
+
+def create_params_dict_from_struct(struct_obj: msgspec.Struct) -> Dict[str, Any]:
+    return {f: getattr(struct_obj, f) for f in struct_obj.__struct_fields__}
+
+
+def create_result_struct_

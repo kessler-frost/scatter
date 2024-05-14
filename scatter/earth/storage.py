@@ -1,10 +1,9 @@
-import redis
-from scatter.constants import REDIS_HOST, REDIS_PORT, REDIS_DB
-from typing import Tuple
+from scatter.earth.cache_init import redis_client
+from scatter.earth.encoder_decoder import deserialize_any
+from typing import Dict, Any
 
-redis_client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
-# TODO: Use redis_client's pipeline for performance improvement
+# TODO: Use redis_client's pipeline for performance improvement when doing multiple operations
 
 
 # ------------------- Callable storage -------------------
@@ -35,17 +34,15 @@ def delete_type_hints(func_name: str) -> None:
     redis_client.delete(f"type_hints@{func_name}")
 
 
-# ------------------- Function args/kwargs storage -------------------
+# ------------------- Function params storage -------------------
 
-def store_params(message_id: str, args_bytes: bytes, kwargs_bytes: bytes) -> None:
-    redis_client.set(f"args@{message_id}", args_bytes)
-    redis_client.set(f"kwargs@{message_id}", kwargs_bytes)
+def store_params(message_id: str, encoded_params: bytes) -> None:
+    redis_client.set(f"params@{message_id}", encoded_params)
 
 
-def retrieve_params(message_id: str) -> Tuple[bytes, bytes]:
-    return redis_client.get(f"args@{message_id}"), redis_client.get(f"kwargs@{message_id}")
+def retrieve_params(message_id: str) -> bytes:
+    return redis_client.get(f"params@{message_id}")
 
 
 def delete_params(message_id: str) -> None:
-    redis_client.delete(f"args@{message_id}")
-    redis_client.delete(f"kwargs@{message_id}")
+    redis_client.delete(f"params@{message_id}")

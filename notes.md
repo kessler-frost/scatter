@@ -7,6 +7,7 @@
 - <https://anyio.readthedocs.io/en/stable/basics.html#running-async-programs>
 - <https://redis.readthedocs.io/en/stable/index.html>
 - <https://github.com/taylorhakes/python-redis-cache>
+- <https://jcristharif.com/msgspec/structs.html#structs>
 
 ## Techstack (transient)
 
