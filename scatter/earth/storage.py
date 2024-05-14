@@ -4,6 +4,8 @@ from typing import Tuple
 
 redis_client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
+# TODO: Use redis_client's pipeline for performance improvement
+
 
 # ------------------- Callable storage -------------------
 
