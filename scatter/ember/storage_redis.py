@@ -1,4 +1,11 @@
-from scatter.ember.cache_init import redis_client
+from typing import Callable
+from scatter.earth.encoder_decoder import deserialize_any
+import redis
+from scatter.ember.constants import REDIS_DB, REDIS_HOST, REDIS_PORT
+
+
+redis_client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+
 
 # TODO: Use redis_client's pipeline for performance improvement when doing multiple operations
 
@@ -43,3 +50,15 @@ def retrieve_params(message_id: str) -> bytes:
 
 def delete_params(message_id: str) -> None:
     redis_client.delete(f"params@{message_id}")
+
+
+# ------------------- Python object retrieval with cache -------------------
+
+def get_callable_function(func_name: str) -> Callable:
+    func_bytes = retrieve_callable(func_name)
+    return deserialize_any(None, func_bytes)
+
+
+def get_type_hints(func_name: str) -> dict:
+    type_hint_bytes = retrieve_type_hints(func_name)
+    return deserialize_any(None, type_hint_bytes)

@@ -1,14 +1,13 @@
 from zero import ZeroServer
 
-from scatter.earth.encoder_decoder import (deserialize_any, encoder,
-                                           generate_decoder)
+from scatter.earth.encoder_decoder import encoder, generate_decoder
 from scatter.earth.struct_creation import (create_params_dict_from_struct,
                                            create_struct_class_from_type_hints)
 from scatter.earth.structures import Function, FunctionExecute, Params
-from scatter.ember.storage import (delete_params, retrieve_callable,
-                                   retrieve_params, retrieve_type_hints,
-                                   store_callable, store_params,
-                                   store_type_hints)
+from scatter.ember.storage_redis import (delete_params, get_callable_function,
+                                         get_type_hints, retrieve_params,
+                                         retrieve_type_hints, store_callable,
+                                         store_params, store_type_hints)
 from scatter.void.constants import ZERO_SERVER_HOST, ZERO_SERVER_PORT
 
 # TODO: Use redis_client's pipeline for performance improvement when doing multiple operations
@@ -28,7 +27,7 @@ def scatter_function(function_: Function) -> None:
 
 
 @app.register_rpc
-def get_type_hints(function_name: str) -> bytes:
+def pull_type_hints(function_name: str) -> bytes:
     return retrieve_type_hints(function_name)
 
 
@@ -51,7 +50,7 @@ def execute_function(function_execute: FunctionExecute) -> bytes:
     # The typing has been verified on the client side already
     # thus, we can safely decode the params without worrying about their type
 
-    type_hints = deserialize_any(None, retrieve_type_hints(function_name))
+    type_hints = get_type_hints(function_name)
     params_struct_class = create_struct_class_from_type_hints(
         function_name, type_hints, "ParamsStruct"
     )
@@ -62,7 +61,7 @@ def execute_function(function_execute: FunctionExecute) -> bytes:
     # Remove the return key from the params_dict
     params_dict.pop("return")
 
-    function = deserialize_any(None, retrieve_callable(function_name))
+    function = get_callable_function(function_name)
 
     result = function(**params_dict)
 

@@ -37,7 +37,7 @@ def scatter(func: Callable) -> Callable:
 
 def make_callable(func_name: str) -> Callable:
 
-    encoded_type_hints = zero_client.call("get_type_hints", func_name)
+    encoded_type_hints = zero_client.call("pull_type_hints", func_name)
     type_hints = deserialize_any(None, encoded_type_hints)
 
     params_struct_class = create_struct_class_from_type_hints(

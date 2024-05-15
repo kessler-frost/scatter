@@ -1,5 +1,4 @@
 from typing import Any, Dict, Optional, get_type_hints
-
 import msgspec
 
 
