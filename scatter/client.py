@@ -1,5 +1,5 @@
 from scatter.brew.core import scatter, make_callable
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from random import randint
 
 
@@ -13,9 +13,9 @@ if __name__ == "__main__":
 
     callable_func = make_callable("add")
 
-    with ProcessPoolExecutor() as executor:
+    with ThreadPoolExecutor() as executor:
         res = executor.map(
             callable_func, [randint(0, 100) for _ in range(NUMS)], [randint(0, 100) for _ in range(NUMS)]
         )
 
-    # print(list(res))
+    print(len(list(res)))
