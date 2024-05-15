@@ -12,8 +12,8 @@
 ## Techstack (transient)
 
 - msgspec -> for typed serialization of function args/kwargs derived automatically from function's annotations/type hints
-- Redis -> to store the function blobs
-- Dramatiq -> to queue and run the functions
+- Redis and Diskcache -> to store the function blobs and other things
+- Possibly switch the zeroapi workers to MPIRE instead of multiprocessing -> gives support for shared objects without copying/serialization
 
 ## References and misc
 
