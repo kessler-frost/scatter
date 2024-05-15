@@ -4,10 +4,12 @@ from scatter.earth.encoder_decoder import encoder, generate_decoder
 from scatter.earth.struct_creation import (create_params_dict_from_struct,
                                            create_struct_class_from_type_hints)
 from scatter.earth.structures import Function, FunctionExecute, Params
-from scatter.ember.redis_backend import (delete_params, get_callable_function,
-                                         get_type_hints, retrieve_params,
-                                         retrieve_type_hints, store_callable,
-                                         store_params, store_type_hints)
+from scatter.ember.diskcache_backend import (delete_params,
+                                             get_callable_function,
+                                             get_type_hints, retrieve_params,
+                                             retrieve_type_hints,
+                                             store_callable, store_params,
+                                             store_type_hints)
 from scatter.void.constants import ZERO_SERVER_HOST, ZERO_SERVER_PORT
 
 # TODO: Use redis_client's pipeline for performance improvement when doing multiple operations
@@ -46,9 +48,6 @@ def execute_function(function_execute: FunctionExecute) -> bytes:
 
     function_name = function_execute["function_name"]
     message_id = function_execute["message_id"]
-
-    # The typing has been verified on the client side already
-    # thus, we can safely decode the params without worrying about their type
 
     type_hints = get_type_hints(function_name)
     params_struct_class = create_struct_class_from_type_hints(

@@ -2,11 +2,12 @@ from diskcache import FanoutCache
 from pathlib import Path
 from typing import Callable
 from scatter.earth.encoder_decoder import deserialize_any
+import os
 
 
 cache_dir = str(Path(__file__).parent / "disk_cache")
 
-cache = FanoutCache(cache_dir)
+cache = FanoutCache(cache_dir, shards=os.cpu_count())
 
 
 # ------------------- Callable storage -------------------
