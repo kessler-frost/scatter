@@ -4,7 +4,7 @@ from scatter.earth.encoder_decoder import encoder, generate_decoder
 from scatter.earth.struct_creation import (create_params_dict_from_struct,
                                            create_struct_class_from_type_hints)
 from scatter.earth.structures import Function, FunctionExecute, Params
-from scatter.ember.storage_redis import (delete_params, get_callable_function,
+from scatter.ember.redis_backend import (delete_params, get_callable_function,
                                          get_type_hints, retrieve_params,
                                          retrieve_type_hints, store_callable,
                                          store_params, store_type_hints)
