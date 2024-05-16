@@ -35,6 +35,18 @@ def scatter(func: Callable) -> Callable:
     return wrapper
 
 
+def vaporize(func_name: str) -> None:
+    zero_client.call("delete_callable", func_name)
+
+
+def rollback(func_name: str) -> None:
+    zero_client.call("rollback_callable", func_name)
+
+
+def current_version(func_name: str) -> int:
+    return zero_client.call("get_current_version", func_name)
+
+
 def make_callable(func_name: str) -> Callable:
 
     encoded_type_hints = zero_client.call("pull_type_hints", func_name)

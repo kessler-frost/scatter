@@ -43,6 +43,11 @@ def delete_callable(function_name: str) -> None:
 
 
 @app.register_rpc
+def get_current_version(function_name: str) -> int:
+    return storage.get_current_version(function_name)
+
+
+@app.register_rpc
 def rollback_callable(function_name: str) -> None:
     storage.rollback(function_name)
 

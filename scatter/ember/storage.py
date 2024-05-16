@@ -58,10 +58,10 @@ class Storage:
         self.cache.set(f"callables@{func_name}", encoded_callables)
 
     def retrieve_callable(self, func_name: str) -> bytes:
-        return self.cache.get(f"callable@{func_name}")[0]
+        return self.cache.get(f"callables@{func_name}")[0]
 
     def delete_callable(self, func_name: str) -> None:
-        self.cache.delete(f"callable@{func_name}")
+        self.cache.delete(f"callables@{func_name}")
 
     # NOTE: Typehints have separate functions from callables
     # even though they should ALWAYS be in sync because we use typehints
@@ -105,8 +105,17 @@ class Storage:
         encoded_typehints: List[bytes] = self.cache.get(f"type_hints@{func_name}")
 
         if encoded_callables:
-            del encoded_callables.pop[0]
-            del encoded_typehints.pop[0]
+            encoded_callables.pop(0)
+            encoded_typehints.pop(0)
 
             self.cache.set(f"callables@{func_name}", encoded_callables)
             self.cache.set(f"type_hints@{func_name}", encoded_typehints)
+
+    def get_current_version(self, func_name: str) -> int:
+        encoded_callables: List[bytes] = self.cache.get(f"callables@{func_name}")
+        version = len(encoded_callables)
+
+        if version == 0:
+            raise ValueError(f"Function {func_name} does not exist")
+
+        return version
