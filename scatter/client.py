@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from random import randint
 
 
-NUMS = 1000
+NUMS = 100
 
 
 if __name__ == "__main__":
