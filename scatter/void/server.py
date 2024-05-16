@@ -22,6 +22,8 @@ def scatter_function(function_: Function) -> None:
     encoded_callable = function_["encoded_callable"]
     encoded_type_hints = function_["encoded_type_hints"]
 
+    # Always need to be called together to maintain consistency
+    # with function's signature and type hints
     storage.store_callable(name, encoded_callable)
     storage.store_type_hints(name, encoded_type_hints)
 
@@ -29,6 +31,20 @@ def scatter_function(function_: Function) -> None:
 @app.register_rpc
 def pull_type_hints(function_name: str) -> bytes:
     return storage.retrieve_type_hints(function_name)
+
+
+@app.register_rpc
+def delete_callable(function_name: str) -> None:
+
+    # Always need to be called together to maintain consistency
+    # with function's signature and type hints
+    storage.delete_callable(function_name)
+    storage.delete_type_hints(function_name)
+
+
+@app.register_rpc
+def rollback_callable(function_name: str) -> None:
+    storage.rollback(function_name)
 
 
 @app.register_rpc
