@@ -1,4 +1,4 @@
-from scatter.brew.core import make_callable, scatter, current_version, rollback
+from scatter.brew.core import make_callable, current_version, rollback, scatter
 
 
 if __name__ == "__main__":
@@ -6,9 +6,9 @@ if __name__ == "__main__":
     num_1 = 42
     num_2 = 42 * 24
 
-    # @scatter
-    # def add(a: int, b: int) -> int:
-    #     return a + b
+    @scatter
+    def add(a: int, b: int) -> int:
+        return a + b
 
     # @scatter
     # def add(a: int, b: int, c: int) -> int:
