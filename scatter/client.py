@@ -1,15 +1,15 @@
-from scatter.brew.core import scatter, make_callable
+from scatter.brew.core import make_callable
 from concurrent.futures import ThreadPoolExecutor
 from random import randint
 
 
-NUMS = 100
+NUMS = 1000
 
 
 if __name__ == "__main__":
-    @scatter
-    def add(a: int, b: int) -> int:
-        return a + b
+    # @scatter
+    # def add(a: int, b: int) -> int:
+    #     return a + b
 
     callable_func = make_callable("add")
 

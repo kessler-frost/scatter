@@ -40,7 +40,7 @@ def scatter_params(params: Params) -> None:
     storage.store_params(message_id, encoded_params)
 
 
-# NOTE: Only place where we use the `decoder` object - i.e. we need the dependencies
+# NOTE: Only place where we use the `decoder` object - i.e. we need the dependencies here
 @app.register_rpc
 def execute_function(function_execute: FunctionExecute) -> bytes:
 
