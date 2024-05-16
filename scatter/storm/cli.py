@@ -44,7 +44,7 @@ def up(ctx: click.Context):
     if len(haps) >= 1:
         for hap in haps:
             if hap.active and "scatter_server" in hap.name:
-                raise typer.Exit("Only 1 `scatter` server should be running at a time")
+                raise typer.Exit("Only one scatter server should be running at a time")
 
     server_path = str(Path(Path(__file__).parent.parent / "void/server.py"))
     command = ("python", server_path)
@@ -87,11 +87,38 @@ def clean(ctx: click.Context):
     ctx.invoke(clean)
 
 
+@click.command()
+@click.pass_context
+def pause(ctx: click.Context):
+    """
+    [yellow] Pause the scatter server [/yellow]
+    """
+
+    from hapless.cli import pause
+
+    ctx.invoke(pause)
+
+
+@click.command()
+@click.pass_context
+def resume(ctx: click.Context):
+    """
+    [green] Resume the scatter server [/green]
+    """
+
+    from hapless.cli import resume
+
+    ctx.invoke(resume)
+
+
+# Adding all the commands
 typer_click_object = typer.main.get_command(app)
 typer_click_object.add_command(up, "up")
 typer_click_object.add_command(down, "down")
 typer_click_object.add_command(status, "status")
 typer_click_object.add_command(clean, "clean")
+typer_click_object.add_command(pause, "pause")
+typer_click_object.add_command(resume, "resume")
 
 
 if __name__ == "__main__":
