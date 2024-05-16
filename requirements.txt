@@ -1,7 +1,8 @@
 cloudpickle
-# diskcache - alternatice to redis if needed
+# diskcache - alternative to redis if needed
+diskcache
 # hapless - for process management
-python-redis-cache
+hapless
 zeroapi
 # icecream - for logging maybe?
 shortuuid

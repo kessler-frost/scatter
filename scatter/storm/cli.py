@@ -19,7 +19,7 @@ def new_kill(pid=1, sig=signal.SIGINT, include_parent=True):
 hapless.utils.kill_proc_tree = new_kill
 
 
-app = typer.Typer()
+app = typer.Typer(rich_markup_mode="rich", add_completion=False)
 
 
 @app.callback(invoke_without_command=True)
@@ -33,7 +33,18 @@ def no_command_show_status(ctx: typer.Context):
 @click.command()
 @click.pass_context
 def up(ctx: click.Context):
-    from hapless.cli import run
+    """
+    [green] Start the scatter server [/green]
+    """
+
+    from hapless.cli import run, hapless
+
+    haps = hapless.get_haps()
+
+    if len(haps) >= 1:
+        for hap in haps:
+            if hap.active and "scatter_server" in hap.name:
+                raise typer.Exit("Only 1 `scatter` server should be running at a time")
 
     server_path = str(Path(Path(__file__).parent.parent / "void/server.py"))
     command = ("python", server_path)
@@ -43,6 +54,10 @@ def up(ctx: click.Context):
 @click.command()
 @click.pass_context
 def down(ctx: click.Context):
+    """
+    [red] Stop the scatter server [/red]
+    """
+
     from hapless.cli import kill
 
     ctx.invoke(kill, killall=True)
@@ -51,6 +66,10 @@ def down(ctx: click.Context):
 @click.command()
 @click.pass_context
 def status(ctx: click.Context):
+    """
+    [blue] Show the status of the scatter server [/blue]
+    """
+
     from hapless.cli import status
 
     ctx.invoke(status)
@@ -59,6 +78,10 @@ def status(ctx: click.Context):
 @click.command()
 @click.pass_context
 def clean(ctx: click.Context):
+    """
+    [red] Cleanup all the haps [/red]
+    """
+
     from hapless.cli import clean
 
     ctx.invoke(clean)
