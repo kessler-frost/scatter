@@ -4,6 +4,8 @@ from hapless.utils import kill_proc_tree
 import typer
 import click
 import hapless.utils
+from pathlib import Path
+import os
 
 # Override hapless.utils.kill_proc_tree to use the new_kill function
 # which uses SIGINT instead of SIGKILL
@@ -17,16 +19,15 @@ def new_kill(pid=1, sig=signal.SIGINT, include_parent=True):
 hapless.utils.kill_proc_tree = new_kill
 
 
-app = typer.Typer(no_args_is_help=True)
+app = typer.Typer()
 
 
-@app.callback()
-def callback():
-    """
-    Empty callback in order to add the click
-    commands to the typer app.
-    """
-    pass
+@app.callback(invoke_without_command=True)
+def no_command_show_status(ctx: typer.Context):
+    from hapless.cli import _status
+
+    if ctx.invoked_subcommand is None:
+        _status()
 
 
 @click.command()
@@ -34,8 +35,9 @@ def callback():
 def up(ctx: click.Context):
     from hapless.cli import run
 
-    command = ("python", "../void/server.py")
-    ctx.invoke(run, cmd=command, name="scatter_server", check=True)
+    server_path = str(Path(Path(__file__).parent.parent / "void/server.py"))
+    command = ("python", server_path)
+    ctx.invoke(run, cmd=command, name=f"scatter_server_{os.getpid()}", check=True)
 
 
 @click.command()
