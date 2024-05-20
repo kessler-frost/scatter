@@ -161,5 +161,7 @@ cython_debug/
 
 
 # Diskcache
-
 disk_cache/
+
+# Redis
+dump.rdb
