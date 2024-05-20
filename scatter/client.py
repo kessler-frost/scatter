@@ -1,18 +1,38 @@
 import requests
-from pydantic import BaseModel
+from scatter.hash_model import Function
+from typing import Callable
+import cloudpickle as pickle
 
 
-class MyNums(BaseModel):
-    a: int
-    b: int
+def serialize(func_: Callable) -> str:
+    return pickle.dumps(func_).hex()
 
 
 if __name__ == "__main__":
 
-    nums = MyNums(a=1, b=2)
+    URL = "http://127.0.0.1:8000"
 
     response = requests.get(
-        "http://127.0.0.1:8000/add", json=nums.model_dump()
+        f"{URL}/add", params={"a": 1, "b": 2}
     )
 
-    print(response.json())
+    print(response.text)
+
+    def add(a: int, b: int, c: int):
+        return a + b + c
+
+    response = requests.put(
+        f"{URL}/ember", json=Function(name="add", callable_=serialize(add)).model_dump()
+    )
+
+    response = requests.get(
+        f"{URL}/add", params={"a": 1, "b": 2}
+    )
+
+    print(response.text)
+
+    response = requests.get(
+        f"{URL}/add", params={"a": 1, "b": 2, "c": 3}
+    )
+
+    print(response.text)
