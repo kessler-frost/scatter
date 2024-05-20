@@ -1,11 +1,18 @@
 import requests
+from pydantic import BaseModel
 
 
-response = requests.get(
-    "http://127.0.0.1:8000/add", json={
-        "a": 1,
-        "b": 2
-    }
-)
+class MyNums(BaseModel):
+    a: int
+    b: int
 
-print(response.json())
+
+if __name__ == "__main__":
+
+    nums = MyNums(a=1, b=2)
+
+    response = requests.get(
+        "http://127.0.0.1:8000/add", json=nums.model_dump()
+    )
+
+    print(response.json())

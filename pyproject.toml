@@ -7,9 +7,9 @@ build-backend = "setuptools.build_meta"
 name = "scatter"
 dynamic = ["version", "dependencies"]
 
-# Disabling cli for now
-# [project.scripts]
-# scatter = "scatter.storm.cli:typer_click_object"
+
+[project.scripts]
+scatter = "scatter.cli:typer_click_object"
 
 
 [tool.setuptools.packages.find]
