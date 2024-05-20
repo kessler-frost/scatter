@@ -18,8 +18,8 @@ if __name__ == "__main__":
 
     print(response.text)
 
-    def add(a: int, b: int, c: int):
-        return a + b + c
+    def add(a: int, b: int) -> int:
+        return 42
 
     response = requests.put(
         f"{URL}/ember", json=Function(name="add", callable_=serialize(add)).model_dump()

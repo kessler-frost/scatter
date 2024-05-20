@@ -1,14 +1,8 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 import cloudpickle as pickle
 from typing import Callable
 from functools import wraps
 from scatter.hash_model import Function
-
-
-class Nums(BaseModel):
-    a: int
-    b: int
 
 
 def ember(func_: Callable):
@@ -28,6 +22,8 @@ def ember(func_: Callable):
 
     @wraps(callable_func)
     def decorator(*args, **kwargs):
+        print("ARGS: ", args)
+        print("KWARGS: ", kwargs)
 
         # Unpickling the second time to run the function
         callable_func = pickle.loads(bytes.fromhex(Function.get(func_.__name__).callable_))
