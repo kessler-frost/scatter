@@ -12,11 +12,11 @@ import os
 old_kill_proc_tree = kill_proc_tree
 
 
-def new_kill(pid=1, sig=signal.SIGINT, include_parent=True):
+def sigint_kill(pid=1, sig=signal.SIGINT, include_parent=True):
     old_kill_proc_tree(pid, sig, include_parent)
 
 
-hapless.utils.kill_proc_tree = new_kill
+hapless.utils.kill_proc_tree = sigint_kill
 
 
 app = typer.Typer(rich_markup_mode="rich", add_completion=False)
@@ -48,6 +48,7 @@ def up(ctx: click.Context):
 
     server_path = str(Path(Path(__file__).parent.parent / "void/server.py"))
     command = ("python", server_path)
+
     ctx.invoke(run, cmd=command, name=f"scatter_server_{os.getpid()}", check=True)
 
 
