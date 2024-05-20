@@ -1,0 +1,8 @@
+cloudpickle
+# diskcache - alternative to redis if needed
+diskcache
+# hapless - for process management
+hapless
+zeroapi
+# icecream - for logging maybe?
+shortuuid
