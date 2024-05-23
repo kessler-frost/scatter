@@ -104,7 +104,7 @@ class Storage:
         encoded_callables: List[bytes] = self.cache.get(f"callables@{func_name}")
         encoded_typehints: List[bytes] = self.cache.get(f"type_hints@{func_name}")
 
-        if encoded_callables:
+        if len(encoded_callables) > 1:
             encoded_callables.pop(0)
             encoded_typehints.pop(0)
 
