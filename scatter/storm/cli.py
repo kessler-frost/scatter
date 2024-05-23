@@ -44,7 +44,9 @@ def up(ctx: click.Context):
     if len(haps) >= 1:
         for hap in haps:
             if hap.active and "scatter_server" in hap.name:
-                raise typer.Exit("Only one scatter server should be running at a time")
+                raise typer.Exit(
+                    "A scatter server is already running. Please stop it before starting a new one."
+                )
 
     server_path = str(Path(Path(__file__).parent.parent / "void/server.py"))
     command = ("python", server_path)

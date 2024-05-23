@@ -58,7 +58,11 @@ class Storage:
         self.cache.set(f"callables@{func_name}", encoded_callables)
 
     def retrieve_callable(self, func_name: str) -> bytes:
-        return self.cache.get(f"callables@{func_name}")[0]
+        encoded_callables = self.cache.get(f"callables@{func_name}")
+        if not encoded_callables:
+            raise ValueError(f"Function {func_name} does not exist")
+
+        return encoded_callables[0]
 
     def delete_callable(self, func_name: str) -> None:
         self.cache.delete(f"callables@{func_name}")
@@ -78,7 +82,12 @@ class Storage:
         self.cache.set(f"type_hints@{func_name}", encoded_typehints)
 
     def retrieve_type_hints(self, func_name: str) -> bytes:
-        return self.cache.get(f"type_hints@{func_name}")[0]
+        encoded_typehints = self.cache.get(f"type_hints@{func_name}")
+
+        if not encoded_typehints:
+            raise ValueError(f"Function {func_name} does not exist")
+
+        return encoded_typehints[0]
 
     def delete_type_hints(self, func_name: str) -> None:
         self.cache.delete(f"type_hints@{func_name}")
