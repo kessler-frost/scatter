@@ -89,26 +89,28 @@ def clean(ctx: click.Context):
 
 @click.command()
 @click.pass_context
-def pause(ctx: click.Context):
+@click.argument("hap_alias", metavar="hap")
+def pause(ctx: click.Context, hap_alias):
     """
     [yellow] Pause the scatter server [/yellow]
     """
 
     from hapless.cli import pause
 
-    ctx.invoke(pause)
+    ctx.invoke(pause, hap_alias=hap_alias)
 
 
 @click.command()
+@click.argument("hap_alias", metavar="hap")
 @click.pass_context
-def resume(ctx: click.Context):
+def resume(ctx: click.Context, hap_alias):
     """
     [green] Resume the scatter server [/green]
     """
 
     from hapless.cli import resume
 
-    ctx.invoke(resume)
+    ctx.invoke(resume, hap_alias=hap_alias)
 
 
 @click.command()
