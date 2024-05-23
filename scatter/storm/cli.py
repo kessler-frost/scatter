@@ -111,6 +111,21 @@ def resume(ctx: click.Context):
     ctx.invoke(resume)
 
 
+@click.command()
+@click.argument("hap_alias", metavar="hap")
+@click.option("-e", "--stderr", is_flag=True, default=False)
+@click.option("-f", "--follow", is_flag=True, default=False)
+@click.pass_context
+def logs(ctx: click.Context, hap_alias, stderr, follow):
+    """
+    [blue] Show the logs of the scatter server [/blue]
+    """
+
+    from hapless.cli import logs
+
+    ctx.invoke(logs, hap_alias=hap_alias, stderr=stderr, follow=follow)
+
+
 # Adding all the commands
 typer_click_object = typer.main.get_command(app)
 typer_click_object.add_command(up, "up")
@@ -119,6 +134,7 @@ typer_click_object.add_command(status, "status")
 typer_click_object.add_command(clean, "clean")
 typer_click_object.add_command(pause, "pause")
 typer_click_object.add_command(resume, "resume")
+typer_click_object.add_command(logs, "logs")
 
 
 if __name__ == "__main__":
