@@ -60,7 +60,7 @@ class Storage:
     def retrieve_callable(self, func_name: str) -> bytes:
         encoded_callables = self.cache.get(f"callables@{func_name}")
         if not encoded_callables:
-            raise ValueError(f"Function {func_name} does not exist")
+            raise ValueError(f"Function '{func_name}' does not exist")
 
         return encoded_callables[0]
 
@@ -85,7 +85,7 @@ class Storage:
         encoded_typehints = self.cache.get(f"type_hints@{func_name}")
 
         if not encoded_typehints:
-            raise ValueError(f"Function {func_name} does not exist")
+            raise ValueError(f"Function '{func_name}' does not exist")
 
         return encoded_typehints[0]
 
@@ -125,6 +125,6 @@ class Storage:
         version = len(encoded_callables)
 
         if version == 0:
-            raise ValueError(f"Function {func_name} does not exist")
+            raise ValueError(f"Function '{func_name}' does not exist")
 
         return version
