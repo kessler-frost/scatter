@@ -1,2 +1,3 @@
 fastapi
 redis-om
+cloudpickle
