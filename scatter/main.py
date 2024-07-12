@@ -24,7 +24,6 @@ def extract_info(func: Callable) -> Dict[str, Any]:
         "return_type": return_type
     }
 
-
 info = extract_info(sample)
 
 print(info)
