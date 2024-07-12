@@ -2,10 +2,12 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from redis_om import HashModel
-from pydantic import field_serializer, field_validator
+from pydantic import field_serializer, field_validator, computed_field
 import cloudpickle
-from typing import Union
+from typing import Union, Callable
 from inspect import Signature
+import inspect
+
 
 class BaseHashModel(HashModel):
     # In case we want to modify anything from the HashModel
@@ -14,21 +16,28 @@ class BaseHashModel(HashModel):
 
 
 class FunctionModel(BaseHashModel):
-    name: str
-    signature: Signature
+    function_: Callable
 
     model_config = {
         "arbitrary_types_allowed": True
     }
 
-    @field_serializer("signature", when_used="always")
-    def serialize_signature_function_signature(signature: Signature) -> bytes:
-        return cloudpickle.dumps(signature)
+    @computed_field
+    def name(self) -> str:
+        return self.function_.__name__
+    
+    @computed_field
+    def signature(self) -> Signature:
+        return inspect.signature(self.function_)
 
-    @field_validator("signature", mode="before")
+    @field_serializer("signature", "function_", when_used="always")
+    def serialize(val: Union[Callable, Signature]) -> bytes:
+        return cloudpickle.dumps(val)
+
+    @field_validator("signature", "function_", mode="before")
     @classmethod
-    def deserialize_signature(cls, signature: Union[bytes, Signature]) -> Signature:
-        if type(signature) is bytes:
-            return cloudpickle.loads(signature)
+    def deserialize(cls, val: Union[bytes, Callable, Signature]) -> Signature:
+        if type(val) is bytes:
+            return cloudpickle.loads(val)
         else:
-            return signature
+            return val
