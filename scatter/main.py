@@ -1,10 +1,10 @@
 from scatter.models import Function, VersionedFunction
 from redis_om import Migrator, get_redis_connection, NotFoundError
 from redis import ResponseError
+from pydantic import validate_call
 from typing import Callable
 import cloudpickle
 import inspect
-import ulid
 
 
 def save(function_: Callable) -> None:
@@ -20,19 +20,18 @@ def save(function_: Callable) -> None:
     except (NotFoundError, ResponseError):
         first_version = 0
 
-        # Save the function
-        function_id = str(ulid.ULID())
-        r = get_redis_connection()
-        r.set(function_id, cloudpickle.dumps(function_))
-
         versioned_function = VersionedFunction(
             version=first_version,
             source=source,
         ).save()
 
+        # Save the function
+        r = get_redis_connection()
+        r.set(versioned_function.pk, cloudpickle.dumps(function_))
+
         new_function = Function(
             name=name,
-            latest=first_version,
+            current_version=first_version,
             versioned_functions={
                 first_version: versioned_function
             }
@@ -43,22 +42,38 @@ def save(function_: Callable) -> None:
         return new_function
 
     # If a function already exists
-    new_version = current_function.latest + 1
-
-    # Save the function
-    function_id = str(ulid.ULID())
-    r = get_redis_connection()
-    r.set(function_id, cloudpickle.dumps(function_))
+    new_version = current_function.current_version + 1
 
     versioned_function = VersionedFunction(
         version=new_version,
         source=source,
     ).save()
 
-    current_function.latest = new_version
+    # Save the function
+    r = get_redis_connection()
+    r.set(versioned_function.pk, cloudpickle.dumps(function_))
+
+
+    current_function.current_version = new_version
     current_function.versioned_functions[new_version] = versioned_function
     return current_function.save()
 
 
+def _get_function(name: str) -> Function:
+    try:
+        return Function.find(Function.name == name).first()
+    except (NotFoundError, ResponseError):
+        raise NotFoundError(f"Function by the name {name} could not be found.")
+
+
 def make_callable(name: str) -> Callable:
-    ...
+    
+    current_function = _get_function(name)
+
+    function_id = current_function.versioned_functions[
+        current_function.current_version
+        ].pk
+
+    r = get_redis_connection(decode_responses=False)
+    ser_func = r.get(function_id)
+    return validate_call(cloudpickle.loads(ser_func))

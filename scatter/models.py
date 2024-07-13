@@ -9,5 +9,5 @@ class VersionedFunction(JsonModel):
 
 class Function(JsonModel):
     name: str = Field(index=True)
-    latest: int
+    current_version: int
     versioned_functions: Dict[int, VersionedFunction]
