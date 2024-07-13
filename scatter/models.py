@@ -1,8 +1,14 @@
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning)
-
 from redis_om import JsonModel, Field
+from typing import Dict
 
 
-class FunctionMetadataModel(JsonModel):
+class VersionedFunction(JsonModel):
+    version: int
+    function_id: str
+    source: str
+
+
+class Function(JsonModel):
     name: str = Field(index=True)
+    latest: int
+    versioned_functions: Dict[int, VersionedFunction]
