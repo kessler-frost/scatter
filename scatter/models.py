@@ -4,7 +4,6 @@ from typing import Dict
 
 class VersionedFunction(JsonModel):
     version: int
-    function_id: str
     source: str
 
 
