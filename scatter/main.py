@@ -1,8 +1,13 @@
-import inspect
-import sys
+# from scatter.models import FunctionModel
+from redis_om import Migrator
+from typing import Callable
 import cloudpickle
-from typing import Dict, Callable, Any
+import inspect
 
 
-def sample(i: int, j: float = 4.0) -> list[float]:
-    return i + j
+def save(function_: Callable, name: str = None) -> None:
+    ...
+
+
+def make_callable(name: str) -> Callable:
+    ...
