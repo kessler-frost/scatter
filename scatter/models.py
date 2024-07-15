@@ -1,13 +1,18 @@
-from redis_om import JsonModel, Field
-from typing import Dict
+from pydantic import BaseModel
+from redis.client import Pipeline
 
 
-class VersionedFunction(JsonModel):
+# NOTE: Potential models for later to facilitate storage
+
+class CustomBaseModel(BaseModel):
+    pipeline: Pipeline
+
+
+class VersionedFunction(CustomBaseModel):
     version: int
     source: str
 
 
-class Function(JsonModel):
-    name: str = Field(index=True)
-    current_version: int
-    versioned_functions: Dict[int, VersionedFunction]
+class Function(CustomBaseModel):
+    name: str
+    latest: int
