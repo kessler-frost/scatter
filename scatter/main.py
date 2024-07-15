@@ -3,6 +3,10 @@ from typing import Callable
 from inspect import getsource
 import cloudpickle
 
+
+VERSIONED_FUNCTION_HASH = "versioned_functions"
+
+
 r = redis.Redis()
 pipeline = r.pipeline()
 
@@ -12,19 +16,28 @@ def save(function_: Callable) -> None:
     source: str = getsource(function_)
     ser_func: bytes = cloudpickle.dumps(function_)
 
-    current_version = r.get(f"{name}.latest")
-    if current_version is None:
-        version = 0
-    else:
-        version = int(current_version) + 1
-    pipeline.set(f"{name}.latest", version)
-    pipeline.set(f"{name}.{version}.source", source)
-    pipeline.set(f"{name}.{version}.function", ser_func)
+    # Increment/create the function version
+    r.hincrby(VERSIONED_FUNCTION_HASH, name)
+    version = int(r.hget(VERSIONED_FUNCTION_HASH, name))
 
-    pipeline.execute()
+    # Save the function
+    r.hset(
+        f"{name}:{version}",
+        mapping={
+            "source": source,
+            "function": ser_func
+        }
+    )
 
 
-def make_callable(name: str) -> Callable:
-    version = r.get(f"{name}.latest")
-    ser_func = r.get(f"{name}.{version}.function")
+def make_callable(name: str, pipelined: bool = False) -> Callable:
+
+    version = int(r.hget(VERSIONED_FUNCTION_HASH, name))
+
+    if pipelined:
+        pipeline.hget(f"{name}:{version}", "function")
+        return pipeline
+
+    ser_func = r.hget(f"{name}:{version}", "function")
+
     return cloudpickle.loads(ser_func)
