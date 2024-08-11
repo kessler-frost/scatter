@@ -1,4 +1,2 @@
-fastapi
-redis-om
-cloudpickle
-schedule
+redis[hiredis]
+jurigged
