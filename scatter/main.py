@@ -1,6 +1,5 @@
 import redis
-from typing import Callable, Dict
-import inspect
+from typing import Callable, Union
 import cloudpickle
 
 FUNC_NAMES_HASH = "func_names_hash"
@@ -11,12 +10,19 @@ pipe = r.pipeline()
 
 def save(func: Callable):
     name: str = func.__name__
-    source: str = inspect.getsource(func)
 
-    new_version = int(r.hget(FUNC_NAMES_HASH, name) or -1) + 1
+    current_version: Union[str, None] = r.hget(FUNC_NAMES_HASH, name)
     ser_func: bytes = cloudpickle.dumps(func)
-        
-    # Save the function's pickle
+
+    # If a function already exists, save it in a new hash
+    if current_version is not None:
+        current_mapping = r.hgetall(name)
+        pipe.hset(
+            f"{name}:{int(current_version)}",
+            mapping=current_mapping
+        )
+
+    # Save the function's updated pickle
     pipe.hset(
         name,
         mapping={
@@ -24,41 +30,22 @@ def save(func: Callable):
         }
     )
 
-    # Save the source code for patching later
-    pipe.hset(
-        f"{name}:{new_version}",
-        mapping={
-            "source": source
-        }
-    )
-
-    pipe.hset(FUNC_NAMES_HASH, name, new_version)
+    pipe.hset(FUNC_NAMES_HASH, name, int(current_version or -1) + 1)
     pipe.execute()
 
 
-def _get_source(name: str):
-    version = r.hget(FUNC_NAMES_HASH, name)
-    if version is None:
-        raise RuntimeError(f"Function {name} does not exist")
-    else:
-        version = int(version)
-
-    return r.hget(
-        f"{name}:{version}",
-        "source"
-    ).decode()
-
-
-def setup(name: str) -> Callable:
-
-    ser_func = r.hget(name, "orig_func")
+def _get_callable(name: str):
+    ser_func = r.hget(name, "ser_func")
     func = cloudpickle.loads(ser_func)
     return func
 
 
-def sync(name: str):
-    source: str = _get_source(name)
-    print(f"Patched: {source}")
+def sync(name_or_func: Union[str, Callable]):
+    if isinstance(name_or_func, str):
+        return _get_callable(name_or_func)
+    else:
+        return _get_callable(name_or_func.__name__)
+    
 
 
 def flush():

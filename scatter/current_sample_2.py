@@ -1,6 +1,5 @@
 import time
-from scatter.main import sync
-import inspect
+from scatter.main import sync, setup
 
 
 def sample_3(i, j):
@@ -11,9 +10,10 @@ def sample_4(i, j):
     return i / j
 
 
-sample_1 = sync("sample_1")
+sample_1 = setup("sample_1")
 
-while(True):
+for i in range(1000):
     print(sample_1(100, 2))
     time.sleep(2)
-    sample_1 = sync("sample_1")
+    if i % 3 == 0:
+        sample_1 = sync(sample_1)
