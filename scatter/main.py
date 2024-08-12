@@ -36,7 +36,7 @@ def save(func: Callable):
         }
     )
 
-    pipe.hincrby(FUNC_NAMES_HASH, name)
+    pipe.hset(FUNC_NAMES_HASH, name, new_version)
     pipe.execute()
 
 
@@ -56,7 +56,7 @@ def _get_source(name: str):
 def setup(name: str) -> Callable:
     source: str = _get_source(name)
 
-    ser_func = r.hget(name, "orig_func").decode()
+    ser_func = r.hget(name, "orig_func")
     func = cloudpickle.loads(ser_func)
     recoder = jurigged.make_recoder(func)
     recoder.patch(source)
@@ -68,3 +68,7 @@ def setup(name: str) -> Callable:
 def sync(name: str):
     source: str = _get_source(name)
     all_recoders[name].patch(source)
+
+
+def flush():
+    r.flushall()
