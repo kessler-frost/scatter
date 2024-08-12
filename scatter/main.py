@@ -1,37 +1,70 @@
 import redis
-from typing import Callable
-from inspect import getsource
+from typing import Callable, Dict
+from jurigged import Recoder
+import jurigged
+import inspect
 import cloudpickle
 
-
-VERSIONED_FUNCTION_HASH = "versioned_functions"
-
+FUNC_NAMES_HASH = "func_names_hash"
 
 r = redis.Redis()
-pipeline = r.pipeline()
+pipe = r.pipeline()
+all_recoders: Dict[str, Recoder] = {}
 
 
-def save(function_: Callable) -> None:
-    name: str = function_.__name__
-    source: str = getsource(function_)
+def save(func: Callable):
+    name: str = func.__name__
+    source: str = inspect.getsource(func)
 
-    # Increment/create the function version
-    r.hincrby(VERSIONED_FUNCTION_HASH, name)
-    version = int(r.hget(VERSIONED_FUNCTION_HASH, name))
+    new_version = int(r.hget(FUNC_NAMES_HASH, name) or -1) + 1
+    if new_version == 0:
+        orig_func: bytes = cloudpickle.dumps(func)
+        
+        # Save the original function's pickle
+        pipe.hset(
+            name,
+            mapping={
+                "orig_func": orig_func
+            }
+        )
 
-    # Save the function - using Redis Hash because for now it is simple, but it will have more fields later on
-    r.hset(
-        f"{name}:{version}",
+    # Save the source code for patching later
+    pipe.hset(
+        f"{name}:{new_version}",
         mapping={
-            "source": source,
+            "source": source
         }
     )
 
+    pipe.hincrby(FUNC_NAMES_HASH, name)
+    pipe.execute()
 
-def make_callable(name: str) -> Callable:
 
-    version = int(r.hget(VERSIONED_FUNCTION_HASH, name))
+def _get_source(name: str):
+    version = r.hget(FUNC_NAMES_HASH, name)
+    if version is None:
+        raise RuntimeError(f"Function {name} does not exist")
+    else:
+        version = int(version)
 
-    ser_func = r.hget(f"{name}:{version}", "function")
+    return r.hget(
+        f"{name}:{version}",
+        "source"
+    ).decode()
 
-    return cloudpickle.loads(ser_func)
+
+def setup(name: str) -> Callable:
+    source: str = _get_source(name)
+
+    ser_func = r.hget(name, "orig_func").decode()
+    func = cloudpickle.loads(ser_func)
+    recoder = jurigged.make_recoder(func)
+    recoder.patch(source)
+
+    all_recoders[name] = recoder
+    return func
+
+
+def sync(name: str):
+    source: str = _get_source(name)
+    all_recoders[name].patch(source)
