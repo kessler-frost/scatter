@@ -23,10 +23,10 @@ class ScatterFunction:
             # Update the name to function's name irrespective of the passed in name
             self.name = self.func.__name__
 
-    def save(self) -> None:
+    def push(self) -> None:
         name: str = self.func.__name__
 
-        current_version: Union[str, None] = self.r.hget(FUNC_VERSIONS_HASH, name)
+        current_version: Union[str, None] = self.version(raw=True)
         ser_func: bytes = cloudpickle.dumps(self.func)
 
         # If a function already exists, save it in a new hash
@@ -48,12 +48,22 @@ class ScatterFunction:
         self.pipe.hset(FUNC_VERSIONS_HASH, name, int(current_version or -1) + 1)
         self.pipe.execute()
 
-    def sync(self) -> None:
+    def pull(self) -> None:
         ser_func = self.r.hget(self.name, "ser_func")
         self.func = cloudpickle.loads(ser_func)
         
         # Update the "look" of the instance
         update_wrapper(self, self.func)
+
+    def version(self, raw: bool = False) -> Union[int, str, None]:
+        raw_version = self.r.hget(FUNC_VERSIONS_HASH, self.name)
+        return raw_version if raw else int(raw_version)
+
+    def upgrade(self) -> None:
+        raise NotImplementedError
+    
+    def downgrade(self) -> None:
+        raise NotImplementedError
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)

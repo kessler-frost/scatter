@@ -12,5 +12,5 @@ def scatter(_func = None) -> ScatterFunction:
 
 def assemble(name: str) -> ScatterFunction:
     scatter_obj = ScatterFunction(r, name=name)
-    scatter_obj.sync()
+    scatter_obj.pull()
     return scatter_obj

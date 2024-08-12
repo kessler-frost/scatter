@@ -20,5 +20,5 @@ for i in range(100):
     print(sample_2(100, 2))
     time.sleep(2)
     if i % 3 == 0:
-        sample_1.sync()
-        sample_2.sync()
+        sample_1.pull()
+        sample_2.pull()
