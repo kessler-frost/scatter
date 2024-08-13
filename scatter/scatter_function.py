@@ -12,7 +12,7 @@ class ScatterFunction:
     def __init__(self, redis_client: redis.Redis, func: Optional[Callable] = None, name: Optional[str] = None) -> None:
         self.r = redis_client
         self.pipe = self.r.pipeline()
-        
+
         if not func and not name:
             raise ValueError("Either `name` or `func` is required to be passed")
 
