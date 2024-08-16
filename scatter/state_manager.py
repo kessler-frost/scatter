@@ -1,9 +1,10 @@
 import redis
 import redis.asyncio as aredis
-from typing import Union
+from typing import Union, Dict
+from scatter.scatter_function import AsyncScatterFunction, ScatterFunction
 
 
-class State:
+class StateManager:
     def __init__(self) -> None:
         self.async_mode: bool = True
 
@@ -13,5 +14,6 @@ class State:
 
         self.scheduled_tasks: set = set()
 
+        self.loaded_functions: Dict[str, Union[AsyncScatterFunction, ScatterFunction]] = {}
 
-state = State()
+state_manager = StateManager()

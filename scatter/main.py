@@ -2,32 +2,45 @@ from scatter.scatter_function import ScatterFunction, AsyncScatterFunction
 from functools import wraps, cache
 import redis
 import redis.asyncio as aredis
-from typing import Union, Callable
+from typing import Union, Callable, List
 import asyncio
-from scatter.state import state
+from scatter.state_manager import state_manager
 
 
-def init(async_mode: bool = True, redis_client: Union[aredis.Redis, redis.Redis] = None):
+def init(
+    async_mode: bool = True,
+    redis_client: Union[aredis.Redis, redis.Redis] = None,
+    functions_to_load: List[str] = None
+):
     # Making this function idempotent
-    if state.redis_client is not None:
+    if state_manager.redis_client is not None:
         return
 
     if redis_client is not None:
-        state.redis_client = redis_client
+        state_manager.redis_client = redis_client
         return
 
-    state.async_mode = async_mode
+    if functions_to_load is not None:
+        functions_to_load = set(functions_to_load)
+
+    state_manager.async_mode = async_mode
     if async_mode:
-        state.redis_client = aredis.Redis(protocol=state.resp_protocol)
+        state_manager.redis_client = aredis.Redis(protocol=state_manager.resp_protocol)
+        for name in functions_to_load:
+            scatter_obj = AsyncScatterFunction(redis_client=state_manager.redis_client, name=name)
+            state_manager.scheduled_tasks.add(asyncio.create_task(scatter_obj.schedule()))
+            state_manager.loaded_functions[name] = scatter_obj
     else:
-        state.redis_client = redis.Redis(protocol=state.resp_protocol)
+        state_manager.redis_client = redis.Redis(protocol=state_manager.resp_protocol)
+        for name in functions_to_load:
+            scatter_obj = ScatterFunction(redis_client=state_manager.redis_client, name=name)
+            scatter_obj.pull()
 
 
-def scatter(_func: Callable = None) -> ScatterFunction:
-
+def scatter(_func: Callable = None) -> Union[AsyncScatterFunction, ScatterFunction]:
     scatter_obj = (
-        AsyncScatterFunction(redis_client=state.redis_client, func=_func) if state.async_mode else
-        ScatterFunction(redis_client=state.redis_client, func=_func)
+        AsyncScatterFunction(redis_client=state_manager.redis_client, func=_func) if state_manager.async_mode else
+        ScatterFunction(redis_client=state_manager.redis_client, func=_func)
     )
     return wraps(_func)(scatter_obj)
 
@@ -35,23 +48,17 @@ def scatter(_func: Callable = None) -> ScatterFunction:
 # Caching so that the same object is returned.
 # In non-async mode, the expectation is that the `pull` method will
 # be called by the user themselves whenever they want, whereas
-# in async mode automatic pulling ONLY when an update happens will happen
-# and thus we don't need to run this function more than once
+# in async mode ONLY pull when an update happens and thus we don't 
+# # need to run this function more than once
 @cache
-def assemble(name: str) -> Union[AsyncScatterFunction, ScatterFunction]:
-    if state.async_mode:
-        scatter_obj = AsyncScatterFunction(redis_client=state.redis_client, name=name)
-        state.scheduled_tasks.add(asyncio.create_task(scatter_obj.schedule()))
-    else:
-        scatter_obj = ScatterFunction(redis_client=state.redis_client, name=name)
-        scatter_obj.pull()
-    return scatter_obj
+def get(name: str):
+    return state_manager.loaded_functions.get(name)
 
 
 def shutdown():
     # Close the redis connections
-    if state.async_mode:
-        state.scheduled_tasks.clear()
-        asyncio.create_task(state.redis_client.aclose())
+    if state_manager.async_mode:
+        state_manager.scheduled_tasks.clear()
+        asyncio.create_task(state_manager.redis_client.aclose())
     else:
-        state.redis_client.close()
+        state_manager.redis_client.close()
