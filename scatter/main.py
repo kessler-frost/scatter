@@ -54,7 +54,6 @@ def assemble(name: str) -> Union[AsyncScatterFunction, ScatterFunction]:
 
     if _async_mode:
         scatter_obj = AsyncScatterFunction(redis_client=_redis_client, name=name)
-        _scheduled_tasks.add(asyncio.create_task(scatter_obj.pull()))
         _scheduled_tasks.add(asyncio.create_task(scatter_obj.schedule()))
     else:
         scatter_obj = ScatterFunction(redis_client=_redis_client, name=name)

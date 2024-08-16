@@ -204,8 +204,10 @@ class AsyncScatterFunction:
         await self.redis_client.publish(f"channel:{self.name}", max(-1, version))
 
     async def schedule(self) -> None:
+        # Since schedule is only done once, need to pull first
+        await self.pull()
+
         await self.pubsub.subscribe(f"channel:{self.name}")
-        print("Subscribed!")
 
         while True:
             message = await self.pubsub.get_message()
