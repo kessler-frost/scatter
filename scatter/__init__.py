@@ -1,1 +1,1 @@
-from .main import init, scatter, assemble
+from .main import init, scatter, assemble, async_mode, shutdown

@@ -1,5 +1,15 @@
 from fastapi import FastAPI
 import scatter
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scatter.async_mode = True
+    scatter.init()
+    yield
+    scatter.shutdown()
+
 
 app = FastAPI()
 

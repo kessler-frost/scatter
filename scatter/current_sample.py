@@ -12,7 +12,7 @@ def sample_2(i, j):
 
 @scatter
 def sample_task():
-    return 42
+    return "poop"
 
 # sample_1.push()
 # sample_2.push()
