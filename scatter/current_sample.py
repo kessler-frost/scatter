@@ -1,4 +1,6 @@
-from scatter import scatter
+from scatter import scatter, init
+
+init()
 
 
 @scatter
