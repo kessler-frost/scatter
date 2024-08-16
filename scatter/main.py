@@ -64,6 +64,7 @@ def shutdown():
 
     # Close the redis connections
     if async_mode:
+        _scheduled_tasks.clear()
         asyncio.create_task(_redis_client.aclose())
     else:
         _redis_client.close()

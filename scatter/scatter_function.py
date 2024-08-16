@@ -3,15 +3,16 @@ import cloudpickle
 import redis
 import redis.asyncio as aredis
 from functools import update_wrapper
-from scatter.scratch_utils import FUNC_VERSIONS_HASH
+from scatter.scratch_utils import FUNC_VERSIONS_HASH, ASYNC_SLEEP_TIME
 import inspect
+import asyncio
 
 
 class ScatterFunction:
     
     def __init__(self, redis_client: Optional[redis.Redis] = None, name: Optional[str] = None, func: Optional[Callable] = None) -> None:
-        self.r = redis_client or redis.Redis(protocol=3)
-        self.pipe = self.r.pipeline()
+        self.redis_client = redis_client
+        self.pipe = self.redis_client.pipeline()
 
         if not func and not name:
             raise ValueError("Either `name` or `func` is required to be passed")
@@ -36,7 +37,7 @@ class ScatterFunction:
         return self._loaded_version
     
     def latest_version(self, raw: bool = False) -> Union[int, str, None]:
-        raw_version = self.r.hget(FUNC_VERSIONS_HASH, self.name)
+        raw_version = self.redis_client.hget(FUNC_VERSIONS_HASH, self.name)
         return raw_version if raw else int(raw_version)
 
     def push(self) -> None:
@@ -46,7 +47,7 @@ class ScatterFunction:
 
         # If a function already exists, save it in a new hash
         if latest_version is not None:
-            current_mapping = self.r.hgetall(self.name)
+            current_mapping = self.redis_client.hgetall(self.name)
             self.pipe.hset(
                 f"{self.name}:{int(latest_version)}",
                 mapping=current_mapping
@@ -76,11 +77,11 @@ class ScatterFunction:
             version >= latest_version or  # In case version is some high number
             latest_version == 0  # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
         ):
-            mapping = self.r.hgetall(self.name)
+            mapping = self.redis_client.hgetall(self.name)
             version = latest_version
         else:
             version = max(0, version)  # Ignore negative values
-            mapping = self.r.hgetall(
+            mapping = self.redis_client.hgetall(
                 f"{self.name}:{version}",
             )
         
@@ -106,8 +107,9 @@ class ScatterFunction:
 class AsyncScatterFunction:
     
     def __init__(self, redis_client: Optional[aredis.Redis], name: Optional[str] = None, func: Optional[Callable] = None) -> None:
-        self.r = redis_client or aredis.Redis(protocol=3)
-        self.pipe = self.r.pipeline()
+        self.redis_client = redis_client
+        self.pipe = self.redis_client.pipeline()
+        self.pubsub = self.redis_client.pubsub(ignore_subscribe_messages=True)
 
         if not func and not name:
             raise ValueError("Either `name` or `func` is required to be passed")
@@ -132,7 +134,7 @@ class AsyncScatterFunction:
         return self._loaded_version
     
     async def latest_version(self, raw: bool = False) -> Union[int, str, None]:
-        raw_version = await self.r.hget(FUNC_VERSIONS_HASH, self.name)
+        raw_version = await self.redis_client.hget(FUNC_VERSIONS_HASH, self.name)
         return raw_version if raw else int(raw_version)
 
     async def push(self) -> None:
@@ -142,7 +144,7 @@ class AsyncScatterFunction:
 
         # If a function already exists, save it in a new hash
         if latest_version is not None:
-            current_mapping = await self.r.hgetall(self.name)
+            current_mapping = await self.redis_client.hgetall(self.name)
             await self.pipe.hset(
                 f"{self.name}:{int(latest_version)}",
                 mapping=current_mapping
@@ -172,11 +174,11 @@ class AsyncScatterFunction:
             version >= latest_version or  # In case version is some high number
             latest_version == 0  # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
         ):
-            mapping = await self.r.hgetall(self.name)
+            mapping = await self.redis_client.hgetall(self.name)
             version = latest_version
         else:
             version = max(0, version)  # Ignore negative values
-            mapping = await self.r.hgetall(
+            mapping = await self.redis_client.hgetall(
                 f"{self.name}:{version}",
             )
 
@@ -194,6 +196,24 @@ class AsyncScatterFunction:
     
     async def downgrade(self) -> None:
         await self.pull(self.loaded_version - 1)
+
+    async def update_all(self, version: Optional[int] = None) -> None:
+        await self.redis_client.publish(f"channel:{self.name}", max(-1, version))
+    
+    async def schedule(self) -> None:
+        # Pulling since this is the first time
+        await self.pull()
+
+        await self.pubsub.subscribe(f"channel:{self.name}")
+        while True:
+            message = await self.pubsub.get_message()
+            if message is not None:
+                to_version = int(message["data"].decode())
+                if to_version != self.loaded_version:
+                    await self.pull(to_version)
+                elif to_version == -1:  # -1 will always lead to updating to the latest version
+                    await self.pull()
+            asyncio.sleep(ASYNC_SLEEP_TIME)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
