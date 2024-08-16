@@ -2,15 +2,13 @@ from typing import Any, Callable, Union, Optional
 import cloudpickle
 import redis
 from functools import update_wrapper
-
-
-FUNC_VERSIONS_HASH = "func_versions_hash"
+from scatter.scratch_utils import FUNC_VERSIONS_HASH
 
 
 class ScatterFunction:
     
-    def __init__(self, redis_client: redis.Redis, func: Optional[Callable] = None, name: Optional[str] = None) -> None:
-        self.r = redis_client
+    def __init__(self, redis_client: Optional[redis.Redis] = None, func: Optional[Callable] = None, name: Optional[str] = None) -> None:
+        self.r = redis_client or redis.Redis(protocol=3)
         self.pipe = self.r.pipeline()
 
         if not func and not name:
@@ -70,7 +68,7 @@ class ScatterFunction:
             ser_func = self.r.hget(self.name, "ser_func")
             version = latest_version
         else:
-            version = max(0, version)
+            version = max(0, version)  # Ignore negative values
             ser_func = self.r.hget(
                 f"{self.name}:{version}",
                 "ser_func"
@@ -81,6 +79,12 @@ class ScatterFunction:
 
         # Update the "look" of the instance
         update_wrapper(self, self.func)
+    
+    def upgrade(self) -> None:
+        self.pull(self.loaded_version + 1)
+    
+    def downgrade(self) -> None:
+        self.pull(self.loaded_version - 1)
 
     def latest_version(self, raw: bool = False) -> Union[int, str, None]:
         raw_version = self.r.hget(FUNC_VERSIONS_HASH, self.name)
