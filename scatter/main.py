@@ -20,18 +20,15 @@ def init(
         state_manager.redis_client = redis_client
         return
 
-    if functions_to_load is not None:
-        functions_to_load = set(functions_to_load)
-
     state_manager.async_mode = async_mode
     if async_mode:
-        state_manager.redis_client = aredis.Redis(protocol=state_manager.resp_protocol)
+        state_manager.redis_client = aredis.Redis(protocol=state_manager.resp_protocol, decode_responses=True)
         for name in functions_to_load:
             scatter_obj = AsyncScatterFunction(redis_client=state_manager.redis_client, name=name)
             state_manager.scheduled_tasks.add(asyncio.create_task(scatter_obj.schedule()))
             state_manager.loaded_functions[name] = scatter_obj
     else:
-        state_manager.redis_client = redis.Redis(protocol=state_manager.resp_protocol)
+        state_manager.redis_client = redis.Redis(protocol=state_manager.resp_protocol, decode_responses=True)
         for name in functions_to_load:
             scatter_obj = ScatterFunction(redis_client=state_manager.redis_client, name=name)
             scatter_obj.pull()
