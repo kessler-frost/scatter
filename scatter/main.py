@@ -1,6 +1,9 @@
-import redis
 from scatter.scatter_function import ScatterFunction
 from functools import wraps
+
+
+def init():
+    ...
 
 
 def scatter(_func = None) -> ScatterFunction:
