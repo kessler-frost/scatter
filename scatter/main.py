@@ -2,42 +2,32 @@ from scatter.scatter_function import ScatterFunction, AsyncScatterFunction
 from functools import wraps, cache
 import redis
 import redis.asyncio as aredis
-from typing import Union
+from typing import Union, Callable
 import asyncio
+from scatter.state import state
 
 
-_async_mode: bool = False
-
-
-# Default RESP protocol is 2 but I'm using 3 as it will support newer features and is backwards compatible
-_resp_protocol: int = 3
-_redis_client: Union[None, redis.Redis, aredis.Redis] = None
-
-
-_scheduled_tasks = set()
-
-
-def init(async_: bool = False):
-    global _redis_client
-    global _async_mode
-    _async_mode = async_
-
-    if _redis_client is not None:
+def init(async_mode: bool = True, redis_client: Union[aredis.Redis, redis.Redis] = None):
+    # Making this function idempotent
+    if state.redis_client is not None:
         return
 
-    if _async_mode:
-        _redis_client = aredis.Redis(protocol=_resp_protocol)
+    if redis_client is not None:
+        state.redis_client = redis_client
+        return
+
+    state.async_mode = async_mode
+    if async_mode:
+        state.redis_client = aredis.Redis(protocol=state.resp_protocol)
     else:
-        _redis_client = redis.Redis(protocol=_resp_protocol)
+        state.redis_client = redis.Redis(protocol=state.resp_protocol)
 
 
-def scatter(_func = None) -> ScatterFunction:
-    global _redis_client
-    global _async_mode
+def scatter(_func: Callable = None) -> ScatterFunction:
 
     scatter_obj = (
-        AsyncScatterFunction(redis_client=_redis_client, func=_func) if _async_mode else
-        ScatterFunction(redis_client=_redis_client, func=_func)
+        AsyncScatterFunction(redis_client=state.redis_client, func=_func) if state.async_mode else
+        ScatterFunction(redis_client=state.redis_client, func=_func)
     )
     return wraps(_func)(scatter_obj)
 
@@ -49,25 +39,19 @@ def scatter(_func = None) -> ScatterFunction:
 # and thus we don't need to run this function more than once
 @cache
 def assemble(name: str) -> Union[AsyncScatterFunction, ScatterFunction]:
-    global _redis_client
-    global _async_mode
-
-    if _async_mode:
-        scatter_obj = AsyncScatterFunction(redis_client=_redis_client, name=name)
-        _scheduled_tasks.add(asyncio.create_task(scatter_obj.schedule()))
+    if state.async_mode:
+        scatter_obj = AsyncScatterFunction(redis_client=state.redis_client, name=name)
+        state.scheduled_tasks.add(asyncio.create_task(scatter_obj.schedule()))
     else:
-        scatter_obj = ScatterFunction(redis_client=_redis_client, name=name)
+        scatter_obj = ScatterFunction(redis_client=state.redis_client, name=name)
         scatter_obj.pull()
     return scatter_obj
 
 
 def shutdown():
-    global _redis_client
-    global _async_mode
-
     # Close the redis connections
-    if _async_mode:
-        _scheduled_tasks.clear()
-        asyncio.create_task(_redis_client.aclose())
+    if state.async_mode:
+        state.scheduled_tasks.clear()
+        asyncio.create_task(state.redis_client.aclose())
     else:
-        _redis_client.close()
+        state.redis_client.close()
