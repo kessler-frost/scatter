@@ -20,3 +20,21 @@ async def read_root():
         "source": sample_task.source,
         "res": sample_task()
     }
+
+
+# from fastapi import FastAPI
+# import inspect
+
+# app = FastAPI()
+
+
+# def sample_task():
+#     return 42
+# sample_task.source = inspect.getsource(sample_task)
+
+# @app.get("/")
+# async def read_root():
+#     return {
+#         "source": sample_task.source,
+#         "res": sample_task()
+#     }
