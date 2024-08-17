@@ -1,6 +1,7 @@
 import redis
 import redis.asyncio as aredis
 from typing import Dict, Optional, TYPE_CHECKING
+from pprint import pformat
 
 if TYPE_CHECKING:
     from scatter.scatter_function import ScatterFunction
@@ -8,8 +9,6 @@ if TYPE_CHECKING:
 
 class StateManager:
     def __init__(self) -> None:
-        print("LOADED STATE MANAGER")
-
         self.auto_updates: bool = True
 
         # Default RESP protocol is 2 but I'm using 3 as it will support newer features and is backwards compatible
@@ -22,6 +21,11 @@ class StateManager:
         self.loaded_functions: Dict[str, "ScatterFunction"] = {}
 
         self.initialized: bool = False
+    
+    def __repr__(self) -> str:
+        return pformat(
+            self.__dict__
+        )
 
 # Since this is part of the "state_manager" module, it is inherently singleton
 state_manager = StateManager()

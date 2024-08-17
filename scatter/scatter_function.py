@@ -1,24 +1,20 @@
 from typing import Any, Callable, Union, Optional
 import cloudpickle
 from functools import update_wrapper
-from scatter.scratch_utils import FUNC_VERSIONS_HASH, ASYNC_SLEEP_TIME
+from scatter.scratch_utils import FUNC_VERSIONS_HASH, ASYNC_SLEEP_TIME, RESERVED_VERSIONS
 from scatter.state_manager import state_manager
 import inspect
 import asyncio
+from pydantic import validate_call
 
 
 class ScatterFunction:
     
-    def __init__(
-            self,
-            name: Optional[str] = None,
-            func: Optional[Callable] = None
-        ) -> None:
+    def __init__(self, name: Optional[str] = None, func: Optional[Callable] = None) -> None:
         self.redis_client = state_manager.redis_client
         self.pipe = self.redis_client.pipeline()
 
         self.aredis_client = state_manager.aredis_client
-        self.apubsub = self.aredis_client.pubsub(ignore_subscribe_messages=True)
         self.apipe = self.aredis_client.pipeline()
 
         if not func and not name:
@@ -54,7 +50,7 @@ class ScatterFunction:
         raw_version = await self.aredis_client.hget(FUNC_VERSIONS_HASH, self.name)
         return raw_version if raw else int(raw_version)
 
-    def push(self) -> None:
+    def push(self, update_existing: bool = True) -> None:
 
         latest_version: Union[str, None] = self.latest_version(raw=True)
         ser_func: bytes = cloudpickle.dumps(self.func)
@@ -79,6 +75,8 @@ class ScatterFunction:
         new_version = int(latest_version or 0) + 1
 
         self.pipe.hset(FUNC_VERSIONS_HASH, self.name, new_version)
+        if update_existing:
+            self.pipe.publish(f"channel:{self.name}", RESERVED_VERSIONS.LATEST)
         self.pipe.execute()
 
         self._loaded_version = new_version
@@ -109,24 +107,31 @@ class ScatterFunction:
 
         await self.apipe.hset(FUNC_VERSIONS_HASH, self.name, new_version)
         if update_existing:
-            await self.apipe.publish(f"channel:{self.name}", -1)
+            await self.apipe.publish(f"channel:{self.name}", RESERVED_VERSIONS.LATEST)
         await self.apipe.execute()
 
         self._loaded_version = new_version
 
+    @validate_call
     def pull(self, version: Optional[int] = None) -> None:
+
+        if version == RESERVED_VERSIONS.NO_CHANGE:
+            return
 
         latest_version = self.latest_version()
         if (
-            version is None or 
-            version >= latest_version or  # In case version is some high number
-            latest_version == 1  # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
+            version is None or
+            version == latest_version or
+            latest_version == 1 or  # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
+            version == RESERVED_VERSIONS.LATEST
         ):
-            # Get the latest version of the function
             mapping = self.redis_client.hgetall(self.name)
             version = latest_version
         else:
-            version = max(1, version)  # Ignoring reserved and negative values
+            if version > latest_version:
+                version = min(latest_version, version)
+            else:
+                version = max(1, version)
             mapping = self.redis_client.hgetall(
                 f"{self.name}:{version}",
             )
@@ -140,18 +145,26 @@ class ScatterFunction:
         # Update the "look" of the instance
         update_wrapper(self, self.func)
 
+    @validate_call
     async def apull(self, version: Optional[int] = None) -> None:
+
+        if version == RESERVED_VERSIONS.NO_CHANGE:
+            return
 
         latest_version = await self.alatest_version()
         if (
-            version is None or 
-            version >= latest_version or  # In case version is some high number
-            latest_version == 1  # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
+            version is None or
+            version == latest_version or
+            latest_version == 1 or  # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
+            version == RESERVED_VERSIONS.LATEST
         ):
             mapping = await self.aredis_client.hgetall(self.name)
             version = latest_version
         else:
-            version = max(1, version)  # Ignore negative values
+            if version > latest_version:
+                version = min(latest_version, version)
+            else:
+                version = max(1, version)
             mapping = await self.aredis_client.hgetall(
                 f"{self.name}:{version}",
             )
@@ -178,20 +191,18 @@ class ScatterFunction:
         await self.apull(self.loaded_version - 1)
     
     async def aupdate_all(self, version: Optional[int] = None) -> None:
-        await self.aredis_client.publish(f"channel:{self.name}", max(-1, version))
+        await self.aredis_client.publish(f"channel:{self.name}", max(RESERVED_VERSIONS.LATEST, version))
 
     async def aschedule_auto_updating(self) -> None:
 
-        await self.apubsub.subscribe(f"channel:{self.name}")
+        pubsub = self.aredis_client.pubsub(ignore_subscribe_messages=True)
+        await pubsub.subscribe(f"channel:{self.name}")
 
         while True:
-            message = await self.apubsub.get_message()
+            message = await pubsub.get_message()
             if message is not None:
                 to_version = int(message["data"].decode())
-                if to_version != self.loaded_version:
-                    await self.apull(to_version)
-                elif to_version == -1:  # -1 will lead to updating to the latest version
-                    await self.apull()
+                await self.apull(to_version)
                 
             await asyncio.sleep(ASYNC_SLEEP_TIME)
 

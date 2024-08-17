@@ -37,7 +37,7 @@ def init(
 
     if redis_url:
         # Never decode the responses
-        redis_url.replace("decode_responses=True", "decode_responses=False")
+        redis_url = redis_url.replace("decode_responses=True", "decode_responses=False")
         state_manager.redis_client = redis.from_url(redis_url)
         state_manager.aredis_client = aredis.from_url(redis_url)
     else:
