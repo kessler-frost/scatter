@@ -36,13 +36,13 @@ def init(
         functions_to_preload = []
 
     if redis_url:
-        # Always decode the responses
-        redis_url.replace("decode_responses=False", "decode_responses=True")
+        # Never decode the responses
+        redis_url.replace("decode_responses=True", "decode_responses=False")
         state_manager.redis_client = redis.from_url(redis_url)
         state_manager.aredis_client = aredis.from_url(redis_url)
     else:
-        state_manager.redis_client = redis.Redis(protocol=state_manager.resp_protocol, decode_responses=True)
-        state_manager.aredis_client = aredis.Redis(protocol=state_manager.resp_protocol, decode_responses=True)
+        state_manager.redis_client = redis.Redis(protocol=state_manager.resp_protocol)
+        state_manager.aredis_client = aredis.Redis(protocol=state_manager.resp_protocol)
 
     for name in functions_to_preload:
         _load_function(name)
