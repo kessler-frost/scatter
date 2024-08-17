@@ -1,1 +1,1 @@
-from .main import init, scatter, get, shutdown
+from .main import init, scatter, get, cleanup

@@ -1,61 +1,72 @@
-from scatter.scatter_function import ScatterFunction, AsyncScatterFunction
-from functools import wraps, cache
+from scatter.scatter_function import ScatterFunction
+from functools import wraps
 import redis
 import redis.asyncio as aredis
-from typing import Union, Callable, List
+from typing import Callable, List, Optional
 import asyncio
 from scatter.state_manager import state_manager
 
 
+def _load_function(name: str):
+    scatter_obj = ScatterFunction(name=name)
+    scatter_obj.pull()
+    if state_manager.auto_updates:
+        state_manager.scheduled_tasks.add(asyncio.create_task(scatter_obj.aschedule_auto_updating()))
+    state_manager.loaded_functions[name] = scatter_obj
+
+
 def init(
-    async_mode: bool = True,
-    redis_client: Union[aredis.Redis, redis.Redis] = None,
-    functions_to_load: List[str] = None
+    auto_updates: bool = True,
+    redis_url: Optional[str] = None, 
+    functions_to_preload: Optional[List[str]] = None
 ):
+    """
+    auto_updates: Automatically update the loaded function if a new version of it is pushed.
+                  Requires a running asyncio event loop.
+    """
+
     # Making this function idempotent
-    if state_manager.redis_client is not None:
+    if state_manager.initialized:
         return
 
-    if redis_client is not None:
-        state_manager.redis_client = redis_client
-        return
+    state_manager.auto_updates = auto_updates
 
-    state_manager.async_mode = async_mode
-    if async_mode:
-        state_manager.redis_client = aredis.Redis(protocol=state_manager.resp_protocol, decode_responses=True)
-        for name in functions_to_load:
-            scatter_obj = AsyncScatterFunction(redis_client=state_manager.redis_client, name=name)
-            state_manager.scheduled_tasks.add(asyncio.create_task(scatter_obj.schedule()))
-            state_manager.loaded_functions[name] = scatter_obj
+    if functions_to_preload is None:
+        # Don't load any, instead let the `get` function load specific ones
+        functions_to_preload = []
+
+    if redis_url:
+        # Always decode the responses
+        redis_url.replace("decode_responses=False", "decode_responses=True")
+        state_manager.redis_client = redis.from_url(redis_url)
+        state_manager.aredis_client = aredis.from_url(redis_url)
     else:
         state_manager.redis_client = redis.Redis(protocol=state_manager.resp_protocol, decode_responses=True)
-        for name in functions_to_load:
-            scatter_obj = ScatterFunction(redis_client=state_manager.redis_client, name=name)
-            scatter_obj.pull()
+        state_manager.aredis_client = aredis.Redis(protocol=state_manager.resp_protocol, decode_responses=True)
 
+    for name in functions_to_preload:
+        _load_function(name)
 
-def scatter(_func: Callable = None) -> Union[AsyncScatterFunction, ScatterFunction]:
-    scatter_obj = (
-        AsyncScatterFunction(redis_client=state_manager.redis_client, func=_func) if state_manager.async_mode else
-        ScatterFunction(redis_client=state_manager.redis_client, func=_func)
-    )
+    state_manager.initialized = True
+
+def scatter(_func: Callable = None) -> ScatterFunction:
+    scatter_obj = ScatterFunction(func=_func)
     return wraps(_func)(scatter_obj)
 
 
-# Caching so that the same object is returned.
-# In non-async mode, the expectation is that the `pull` method will
-# be called by the user themselves whenever they want, whereas
-# in async mode ONLY pull when an update happens and thus we don't 
-# # need to run this function more than once
-@cache
 def get(name: str):
+    if name not in state_manager.loaded_functions:
+        _load_function(name)
     return state_manager.loaded_functions.get(name)
 
 
-def shutdown():
-    # Close the redis connections
-    if state_manager.async_mode:
-        state_manager.scheduled_tasks.clear()
-        asyncio.create_task(state_manager.redis_client.aclose())
-    else:
-        state_manager.redis_client.close()
+def cleanup():
+    # Release references for garbage collection
+    state_manager.scheduled_tasks.clear()
+    state_manager.loaded_functions.clear()
+
+    # Async client requires manual closing
+    try:
+        asyncio.create_task(state_manager.aredis_client.aclose())
+    except RuntimeError:
+        asyncio.run(state_manager.aredis_client.aclose())

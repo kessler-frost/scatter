@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     scatter.init()
     yield
-    scatter.shutdown()
+    scatter.cleanup()
 
 
 app = FastAPI(lifespan=lifespan)
