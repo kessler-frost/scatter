@@ -1,7 +1,7 @@
 from typing import Any, Callable, Union, Optional
 import cloudpickle
 from functools import update_wrapper
-from scatter.scratch_utils import FUNC_VERSIONS_HASH, ASYNC_SLEEP_TIME, RESERVED_VERSIONS
+from scatter.utils import FUNC_VERSIONS_HASH, ASYNC_SLEEP_TIME, RESERVED_VERSIONS
 from scatter.state_manager import state_manager
 import inspect
 import asyncio
