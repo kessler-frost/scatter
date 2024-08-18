@@ -80,7 +80,7 @@ class ScatterFunction:
 
         self.pipe.hset(state_manager.FUNC_VERSIONS_HASH_NAME, self.name, new_version)
         if update_existing:
-            self.pipe.publish(f"channel:{self.name}", RESERVED_VERSIONS.LATEST)
+            self.pipe.publish(f"{state_manager.CHANNEL_NAME}:{self.name}", RESERVED_VERSIONS.LATEST)
         self.pipe.execute()
 
         self._loaded_version = new_version
