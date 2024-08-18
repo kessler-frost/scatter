@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 import scatter
 from contextlib import asynccontextmanager
+import os
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    scatter.init()
+    scatter.init(redis_url=os.getenv("RAILWAY_REDIS"))
     yield
     scatter.cleanup()
 
