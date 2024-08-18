@@ -1,7 +1,7 @@
 from typing import Any, Callable, Union, Optional
 import cloudpickle
 from functools import update_wrapper
-from scatter.utils import FUNC_VERSIONS_HASH, ASYNC_SLEEP_TIME, RESERVED_VERSIONS
+from scatter.utils import FUNC_VERSIONS_HASH, ASYNC_SLEEP_TIME, RESERVED_VERSIONS, safe_decode, dict_decode
 from scatter.state_manager import state_manager
 import inspect
 import asyncio
@@ -43,11 +43,11 @@ class ScatterFunction:
         return self.func is not None
     
     def latest_version(self, raw: bool = False) -> Union[int, str, None]:
-        raw_version = self.redis_client.hget(FUNC_VERSIONS_HASH, self.name)
+        raw_version = safe_decode(self.redis_client.hget(FUNC_VERSIONS_HASH, self.name))
         return raw_version if raw else int(raw_version)
     
     async def alatest_version(self, raw: bool = False) -> Union[int, str, None]:
-        raw_version = await self.aredis_client.hget(FUNC_VERSIONS_HASH, self.name)
+        raw_version = safe_decode(await self.aredis_client.hget(FUNC_VERSIONS_HASH, self.name))
         return raw_version if raw else int(raw_version)
 
     def push(self, update_existing: bool = True) -> None:
@@ -57,7 +57,7 @@ class ScatterFunction:
 
         # If a function already exists, save it in a new hash
         if latest_version is not None:
-            current_mapping = self.redis_client.hgetall(self.name)
+            current_mapping = dict_decode(self.redis_client.hgetall(self.name))
             self.pipe.hset(
                 f"{self.name}:{int(latest_version)}",
                 mapping=current_mapping
@@ -88,7 +88,7 @@ class ScatterFunction:
 
         # If a function already exists, save it in a new hash
         if latest_version is not None:
-            current_mapping = await self.aredis_client.hgetall(self.name)
+            current_mapping = dict_decode(await self.aredis_client.hgetall(self.name))
             await self.apipe.hset(
                 f"{self.name}:{int(latest_version)}",
                 mapping=current_mapping
@@ -128,22 +128,20 @@ class ScatterFunction:
             latest_version == 1 or  # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
             version == RESERVED_VERSIONS.LATEST
         ):
-            mapping = self.redis_client.hgetall(self.name)
+            mapping = dict_decode(self.redis_client.hgetall(self.name))
             version = latest_version
         else:
             if version > latest_version:
                 version = min(latest_version, version)
             else:
                 version = max(1, version)
-            mapping = self.redis_client.hgetall(
+            mapping = dict_decode(self.redis_client.hgetall(
                 f"{self.name}:{version}",
-            )
-        
-        ser_func, source = mapping.values()
+            ))
 
         self._loaded_version = version
-        self._source = source
-        self.func = cloudpickle.loads(ser_func)
+        self._source = mapping["source"]
+        self.func = cloudpickle.loads(mapping["ser_func"])
 
         # Update the "look" of the instance
         update_wrapper(self, self.func)
@@ -164,22 +162,20 @@ class ScatterFunction:
             latest_version == 1 or  # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
             version == RESERVED_VERSIONS.LATEST
         ):
-            mapping = await self.aredis_client.hgetall(self.name)
+            mapping = dict_decode(await self.aredis_client.hgetall(self.name))
             version = latest_version
         else:
             if version > latest_version:
                 version = min(latest_version, version)
             else:
                 version = max(1, version)
-            mapping = await self.aredis_client.hgetall(
+            mapping = dict_decode(await self.aredis_client.hgetall(
                 f"{self.name}:{version}",
-            )
-
-        ser_func, source = mapping.values()
+            ))
 
         self._loaded_version = version
-        self._source = source
-        self.func = cloudpickle.loads(ser_func)
+        self._source = mapping["source"]
+        self.func = cloudpickle.loads(mapping["ser_func"])
 
         # Update the "look" of the instance
         update_wrapper(self, self.func)
