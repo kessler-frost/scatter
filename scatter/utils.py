@@ -1,7 +1,6 @@
-from typing import Union, Dict, Any
+from typing import Dict, Any
 
 
-FUNC_VERSIONS_HASH = "func_versions_hash"
 ASYNC_SLEEP_TIME = 0.001
 
 

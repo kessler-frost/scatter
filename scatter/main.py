@@ -11,16 +11,24 @@ def _load_function(name: str):
     scatter_obj = ScatterFunction(name=name)
     scatter_obj.pull()
     if state_manager.auto_updates:
-        state_manager.scheduled_tasks.add(asyncio.create_task(scatter_obj.aschedule_auto_updating()))
+        state_manager.scheduled_tasks.add(
+            asyncio.create_task(scatter_obj.aschedule_auto_updating())
+        )
     state_manager.loaded_functions[name] = scatter_obj
 
 
 def init(
+    prefix: Optional[str] = None,
     auto_updates: bool = True,
-    redis_url: Optional[str] = None, 
-    functions_to_preload: Optional[List[str]] = None
+    redis_url: Optional[str] = None,
+    functions_to_preload: Optional[List[str]] = None,
 ):
     """
+    prefix: Prefix to use to determine which set of functions does the user wants to operate upon.
+            For e.g. there might be 2 `sample_task`'s saved. One belonging to `red_project` and
+            another to `blue_project` in the same Redis store, or if you have a shared Redis store
+            with another user, you can also use this to specify whose functions will be operated upon
+            using `prefix=Thor` or `prefix=Steve`.
     auto_updates: Automatically update the loaded function if a new version of it is pushed.
                   Requires a running asyncio event loop.
     """
@@ -29,6 +37,7 @@ def init(
     if state_manager.initialized:
         return
 
+    state_manager.prefix = prefix or "hal-jordan"
     state_manager.auto_updates = auto_updates
 
     if functions_to_preload is None:
@@ -48,6 +57,7 @@ def init(
         _load_function(name)
 
     state_manager.initialized = True
+
 
 def scatter(_func: Callable = None) -> ScatterFunction:
     scatter_obj = ScatterFunction(func=_func)
