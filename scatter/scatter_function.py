@@ -118,7 +118,10 @@ class ScatterFunction:
         if version == RESERVED_VERSIONS.NO_CHANGE:
             return
 
-        latest_version = self.latest_version()
+        latest_version = self.latest_version(raw=True)
+        if latest_version is None:
+            raise KeyError(f"Function {self.name} doesn't exist")
+
         if (
             version is None or
             version == latest_version or
@@ -151,7 +154,10 @@ class ScatterFunction:
         if version == RESERVED_VERSIONS.NO_CHANGE:
             return
 
-        latest_version = await self.alatest_version()
+        latest_version = await self.alatest_version(raw=True)
+        if latest_version is None:
+            raise KeyError(f"Function {self.name} doesn't exist")
+
         if (
             version is None or
             version == latest_version or

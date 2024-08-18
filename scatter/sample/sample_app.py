@@ -15,10 +15,10 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def read_root():
-    sample_task = scatter.get("sample_task")
+    sample_task = scatter.get("sample_task_1")
     return {
         "source": sample_task.source,
-        "res": sample_task()
+        "res": sample_task(4, 2)
     }
 
 
