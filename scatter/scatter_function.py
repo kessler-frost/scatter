@@ -18,7 +18,7 @@ class ScatterFunction:
         self.apipe = self.aredis_client.pipeline()
 
         if not func and not name:
-            raise ValueError("Either `name` or `func` is required to be passed")
+            raise ValueError("Either `name` or `func` must be passed")
 
         self.name = name
         self.func = func
@@ -126,7 +126,7 @@ class ScatterFunction:
 
         latest_version = self.latest_version(raw=True)
         if latest_version is None:
-            raise KeyError(f"Function {self.name} doesn't exist")
+            raise KeyError(f"Function `{self.name}` doesn't exist")
 
         if (
             version is None
@@ -150,6 +150,10 @@ class ScatterFunction:
                 )
             )
 
+            # If trying to pull a version which no longer exists
+            if len(mapping) == 0:
+                raise KeyError(f"`{version}` version of the function `{self.name}` no longer exists")
+
         self._loaded_version = version
         self._source = mapping["source"]
         self.func = cloudpickle.loads(mapping["ser_func"])
@@ -163,7 +167,7 @@ class ScatterFunction:
 
         latest_version = await self.alatest_version(raw=True)
         if latest_version is None:
-            raise KeyError(f"Function {self.name} doesn't exist")
+            raise KeyError(f"Function `{self.name}` doesn't exist")
 
         if (
             version is None
@@ -189,12 +193,54 @@ class ScatterFunction:
                 )
             )
 
+            # If trying to pull a version which no longer exists
+            if len(mapping) == 0:
+                raise KeyError(f"`{version}` version of the function `{self.name}` no longer exists")
+
         self._loaded_version = version
         self._source = mapping["source"]
         self.func = cloudpickle.loads(mapping["ser_func"])
 
         # Update the "look" of the instance
         update_wrapper(self, self.func)
+
+    def delete(self, older_than: Optional[int] = None) -> None:
+        latest_version = self.latest_version(raw=True)
+        if latest_version is not None:
+            latest_version = int(latest_version)
+            if older_than >= latest_version:
+                older_than = min(latest_version, older_than)
+            elif older_than < 1:
+                older_than = max(1, older_than)
+            else:
+                # `older_than` is None thus delete all
+                self.pipe.hdel(state_manager.FUNC_VERSIONS_HASH_NAME, self.name)
+                self.pipe.delete(f"{state_manager.ROOT_PREFIX}:{self.name}")
+
+                # For deleting others
+                older_than = latest_version
+
+            self.pipe.delete(*[f"{state_manager.ROOT_PREFIX}:{self.name}:{version}" for version in range(1, older_than)])
+            self.pipe.execute()
+    
+    async def adelete(self, older_than: Optional[int] = None) -> None:
+        latest_version = await self.alatest_version(raw=True)
+        if latest_version is not None:
+            latest_version = int(latest_version)
+            if older_than >= latest_version:
+                older_than = min(latest_version, older_than)
+            elif older_than < 1:
+                older_than = max(1, older_than)
+            else:
+                # `older_than` is None thus delete all
+                await self.apipe.hdel(state_manager.FUNC_VERSIONS_HASH_NAME, self.name)
+                await self.apipe.delete(f"{state_manager.ROOT_PREFIX}:{self.name}")
+
+                # For deleting others
+                older_than = latest_version
+
+            await self.apipe.delete(*[f"{state_manager.ROOT_PREFIX}:{self.name}:{version}" for version in range(1, older_than)])
+            await self.apipe.execute()
 
     def upgrade(self) -> None:
         self.pull(self.loaded_version + 1)
