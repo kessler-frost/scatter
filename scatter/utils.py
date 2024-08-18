@@ -5,14 +5,15 @@ ASYNC_SLEEP_TIME = 0.001
 
 
 class RESERVED_VERSIONS:
-    NO_CHANGE = 0
     LATEST = -1
+    NO_CHANGE = 0
+    INITIAL = 1
 
 
 def safe_decode(obj: bytes) -> Any:
     try:
         return obj.decode()
-    except:
+    except Exception:
         return obj
 
 

@@ -76,7 +76,7 @@ class ScatterFunction:
             mapping={"ser_func": ser_func, "source": self.source},
         )
 
-        new_version = int(latest_version or 0) + 1
+        new_version = int(latest_version or RESERVED_VERSIONS.INITIAL - 1) + 1
 
         self.pipe.hset(state_manager.FUNC_VERSIONS_HASH_NAME, self.name, new_version)
         if update_existing:
@@ -107,7 +107,7 @@ class ScatterFunction:
             mapping={"ser_func": ser_func, "source": self.source},
         )
 
-        new_version = int(latest_version or 0) + 1
+        new_version = int(latest_version or RESERVED_VERSIONS.INITIAL - 1) + 1
 
         await self.apipe.hset(
             state_manager.FUNC_VERSIONS_HASH_NAME, self.name, new_version
@@ -131,8 +131,8 @@ class ScatterFunction:
         if (
             version is None
             or version == latest_version
-            or latest_version
-            == 1  # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
+            # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
+            or latest_version == RESERVED_VERSIONS.INITIAL
             or version == RESERVED_VERSIONS.LATEST
         ):
             mapping = dict_decode(
@@ -143,7 +143,7 @@ class ScatterFunction:
             if version > latest_version:
                 version = min(latest_version, version)
             else:
-                version = max(1, version)
+                version = max(RESERVED_VERSIONS.INITIAL, version)
             mapping = dict_decode(
                 self.redis_client.hgetall(
                     f"{state_manager.ROOT_PREFIX}:{self.name}:{version}",
@@ -174,7 +174,7 @@ class ScatterFunction:
             or version == latest_version
             or version == RESERVED_VERSIONS.LATEST
             # In case there doesn't exist any other version, thus no `{name}:{version}` hash exists
-            or latest_version == 1
+            or latest_version == RESERVED_VERSIONS.INITIAL
         ):
             mapping = dict_decode(
                 await self.aredis_client.hgetall(
@@ -185,8 +185,9 @@ class ScatterFunction:
         else:
             if version > latest_version:
                 version = min(latest_version, version)
+
             else:
-                version = max(1, version)
+                version = max(RESERVED_VERSIONS.INITIAL, version)
             mapping = dict_decode(
                 await self.aredis_client.hgetall(
                     f"{state_manager.ROOT_PREFIX}:{self.name}:{version}",
@@ -205,41 +206,60 @@ class ScatterFunction:
         update_wrapper(self, self.func)
 
     def delete(self, older_than: Optional[int] = None) -> None:
+
         latest_version = self.latest_version(raw=True)
         if latest_version is not None:
+
             latest_version = int(latest_version)
-            if older_than >= latest_version:
-                older_than = min(latest_version, older_than)
-            elif older_than < 1:
-                older_than = max(1, older_than)
-            else:
-                # `older_than` is None thus delete all
+
+            if older_than is None:
+                # Delete all
                 self.pipe.hdel(state_manager.FUNC_VERSIONS_HASH_NAME, self.name)
                 self.pipe.delete(f"{state_manager.ROOT_PREFIX}:{self.name}")
 
                 # For deleting others
                 older_than = latest_version
 
-            self.pipe.delete(*[f"{state_manager.ROOT_PREFIX}:{self.name}:{version}" for version in range(1, older_than)])
+            elif older_than == RESERVED_VERSIONS.LATEST:
+                older_than = latest_version
+
+            elif older_than >= latest_version:
+                older_than = min(latest_version, older_than)
+
+            elif older_than < RESERVED_VERSIONS.INITIAL:
+                older_than = max(RESERVED_VERSIONS.INITIAL, older_than)
+
+            if latest_version != RESERVED_VERSIONS.INITIAL:
+                self.pipe.delete(*[f"{state_manager.ROOT_PREFIX}:{self.name}:{version}" for version in range(RESERVED_VERSIONS.INITIAL, older_than)])
+
             self.pipe.execute()
     
     async def adelete(self, older_than: Optional[int] = None) -> None:
         latest_version = await self.alatest_version(raw=True)
         if latest_version is not None:
+
             latest_version = int(latest_version)
-            if older_than >= latest_version:
-                older_than = min(latest_version, older_than)
-            elif older_than < 1:
-                older_than = max(1, older_than)
-            else:
-                # `older_than` is None thus delete all
+
+            if older_than is None:
+                # Delete all
                 await self.apipe.hdel(state_manager.FUNC_VERSIONS_HASH_NAME, self.name)
                 await self.apipe.delete(f"{state_manager.ROOT_PREFIX}:{self.name}")
 
                 # For deleting others
                 older_than = latest_version
 
-            await self.apipe.delete(*[f"{state_manager.ROOT_PREFIX}:{self.name}:{version}" for version in range(1, older_than)])
+            elif older_than == RESERVED_VERSIONS.LATEST:
+                older_than = latest_version
+
+            elif older_than >= latest_version:
+                older_than = min(latest_version, older_than)
+
+            elif older_than < RESERVED_VERSIONS.INITIAL:
+                older_than = max(RESERVED_VERSIONS.INITIAL, older_than)
+
+            if latest_version != RESERVED_VERSIONS.INITIAL:
+                await self.apipe.delete(*[f"{state_manager.ROOT_PREFIX}:{self.name}:{version}" for version in range(RESERVED_VERSIONS.INITIAL, older_than)])
+
             await self.apipe.execute()
 
     def upgrade(self) -> None:
