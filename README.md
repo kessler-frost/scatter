@@ -27,4 +27,4 @@ pip install scatter
 
 ## License
 
-Project License can be found 
+This project is licensed under [MIT](https://github.com/kessler-frost/scatter?tab=MIT-1-ov-file#readme)
