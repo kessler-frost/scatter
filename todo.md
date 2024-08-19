@@ -1,6 +1,3 @@
 # To Do
-
-- [] Version control and rollback maybe using GitPython
-- [x] CLI to start it up
-  - [] Add `logs` and `signal` command as well
-- [] Showcasable examples
+- [ ] Basic saving and retrieving of functions
+- [ ] Upgrading/Downgrading -> this mechanism is built into `pull` by specifying the version you want

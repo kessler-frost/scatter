@@ -1,0 +1,82 @@
+from scatter.scatter_function import ScatterFunction
+from functools import wraps
+import redis
+import redis.asyncio as aredis
+from typing import Callable, List, Optional
+import asyncio
+from scatter.state_manager import state_manager
+
+
+def _load_function(name: str):
+    scatter_obj = ScatterFunction(name=name)
+    scatter_obj.pull()
+    if state_manager.auto_updates:
+        state_manager.scheduled_tasks.add(
+            asyncio.create_task(scatter_obj.aschedule_auto_updating())
+        )
+    state_manager.loaded_functions[name] = scatter_obj
+
+
+def init(
+    prefix: Optional[str] = None,
+    auto_updates: bool = True,
+    redis_url: Optional[str] = None,
+    functions_to_preload: Optional[List[str]] = None,
+):
+    """
+    prefix: Prefix to use to determine which set of functions does the user wants to operate upon.
+            For e.g. there might be 2 `sample_task`'s saved. One belonging to `red_project` and
+            another to `blue_project` in the same Redis store, or if you have a shared Redis store
+            with another user, you can also use this to specify whose functions will be operated upon
+            using `prefix=Thor` or `prefix=Steve`.
+    auto_updates: Automatically update the loaded function if a new version of it is pushed.
+                  Requires a running asyncio event loop.
+    """
+
+    # Making this function idempotent
+    if state_manager.initialized:
+        return
+
+    state_manager.prefix = prefix or "hal-jordan"
+    state_manager.auto_updates = auto_updates
+
+    if functions_to_preload is None:
+        # Don't load any, instead let the `get` function load specific ones
+        functions_to_preload = []
+
+    if redis_url:
+        # Never decode the responses
+        redis_url = redis_url.replace("decode_responses=True", "decode_responses=False")
+        state_manager.redis_client = redis.from_url(redis_url)
+        state_manager.aredis_client = aredis.from_url(redis_url)
+    else:
+        state_manager.redis_client = redis.Redis(protocol=state_manager.resp_protocol)
+        state_manager.aredis_client = aredis.Redis(protocol=state_manager.resp_protocol)
+
+    for name in functions_to_preload:
+        _load_function(name)
+
+    state_manager.initialized = True
+
+
+def scatter(_func: Callable = None) -> ScatterFunction:
+    scatter_obj = ScatterFunction(func=_func)
+    return wraps(_func)(scatter_obj)
+
+
+def get(name: str):
+    if name not in state_manager.loaded_functions:
+        _load_function(name)
+    return state_manager.loaded_functions.get(name)
+
+
+def cleanup():
+    # Release references for garbage collection
+    state_manager.scheduled_tasks.clear()
+    state_manager.loaded_functions.clear()
+
+    # Async client requires manual closing
+    try:
+        asyncio.create_task(state_manager.aredis_client.aclose())
+    except RuntimeError:
+        asyncio.run(state_manager.aredis_client.aclose())

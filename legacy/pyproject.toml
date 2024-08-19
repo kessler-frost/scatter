@@ -7,6 +7,9 @@ build-backend = "setuptools.build_meta"
 name = "scatter"
 dynamic = ["version", "dependencies"]
 
+[project.scripts]
+scatter = "scatter.storm.cli:typer_click_object"
+
 
 [tool.setuptools.packages.find]
 exclude = ["*.ipynb", "**/*.ipynb"]
