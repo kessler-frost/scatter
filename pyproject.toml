@@ -12,7 +12,7 @@ authors = [
 ]
 description = "Redis backed hot-reloadable function management in Python"
 readme = "README.md"
-keywords = ["redis", "lightweight", "function", "management", "hot-reload"]
+keywords = ["redis", "lightweight", "function", "management", "hot-reload", "scatter"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
