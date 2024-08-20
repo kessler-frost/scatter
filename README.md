@@ -2,8 +2,6 @@
 
 # scatter | ![GitHub License](https://img.shields.io/github/license/kessler-frost/scatter?color=blue)
 
-
-
 </div>
 
 Redis backed hot-reloadable function management in Python
