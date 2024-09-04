@@ -1,13 +1,14 @@
-from scatter import scatter, init
+import scatter
 from scatter.utils import ASYNC_SLEEP_TIME
 import requests
 import time
+import pytest
 
 
 def test_basic_push_pull_delete():
-    # Remember to start the redis container at 6379
+    # assumed that a redis instance is running at port 6379
 
-    init()
+    scatter.init()
 
     oath = [
         "In the brightest day, ",
@@ -18,7 +19,7 @@ def test_basic_push_pull_delete():
     ]
 
     for o in oath:
-        @scatter
+        @scatter.scatter
         def super_func():
             return o
 
@@ -29,11 +30,11 @@ def test_basic_push_pull_delete():
 
         resp = requests.get("http://localhost:8000")
         content = resp.json()["res"]
+        assert content == o
 
-        try:
-            assert content == o
-        except AssertionError:
-            # super_func.delete()
-            raise
+    # completely delete this function
+    super_func.delete()
 
-    # super_func.delete()
+    # raise key error on a deleted function
+    with pytest.raises(KeyError):
+        scatter.get("super_func")
