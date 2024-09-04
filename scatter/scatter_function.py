@@ -127,6 +127,8 @@ class ScatterFunction:
         latest_version = self.latest_version(raw=True)
         if latest_version is None:
             raise KeyError(f"Function `{self.name}` doesn't exist")
+        else:
+            latest_version = int(latest_version)
 
         if (
             version is None
@@ -168,6 +170,8 @@ class ScatterFunction:
         latest_version = await self.alatest_version(raw=True)
         if latest_version is None:
             raise KeyError(f"Function `{self.name}` doesn't exist")
+        else:
+            latest_version = int(latest_version)
 
         if (
             version is None

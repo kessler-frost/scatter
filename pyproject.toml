@@ -10,9 +10,9 @@ requires-python = ">= 3.10"
 authors = [
     {name = "Sankalp Sanand"},
 ]
-description = "Redis backed hot-reloadable function management in Python"
+description = "Redis backed live-reloadable function management in Python"
 readme = "README.md"
-keywords = ["redis", "lightweight", "function", "management", "hot-reload", "scatter"]
+keywords = ["redis", "lightweight", "function", "management", "live-reload", "scatter"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -30,7 +30,7 @@ Repository = "https://github.com/kessler-frost/scatter"
 Issues = "https://github.com/kessler-frost/scatter/issues"
 
 [tool.setuptools.packages.find]
-exclude = ["*.ipynb", "**/*.ipynb"]
+exclude = ["*.ipynb", "**/*.ipynb", "tests"]
 
 
 [tool.setuptools.dynamic]

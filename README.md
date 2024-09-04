@@ -4,7 +4,7 @@
 
 </div>
 
-Redis backed hot-reloadable function management in Python
+Redis backed live-reloadable function management in Python
 
 ## Features
 
