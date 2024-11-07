@@ -4,7 +4,8 @@
 
 </div>
 
-Redis backed live-reloadable function management in Python
+Redis backed live-reloadable function management in Python.
+Edit remote functions in real-time.
 
 ## Features
 
