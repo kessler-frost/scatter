@@ -24,10 +24,16 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 
+
+[project.scripts]
+scatter = "scatter.cli.main:app"
+
+
 [project.urls]
 Homepage = "https://github.com/kessler-frost/scatter"
 Repository = "https://github.com/kessler-frost/scatter"
 Issues = "https://github.com/kessler-frost/scatter/issues"
+
 
 [tool.setuptools.packages.find]
 exclude = ["*.ipynb", "**/*.ipynb", "tests"]
