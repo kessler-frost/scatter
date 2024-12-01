@@ -1,1 +1,1 @@
-from .main import init, register, get, cleanup, integrate_app
+from .main import init, track, get, cleanup, integrate_app

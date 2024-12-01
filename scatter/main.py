@@ -1,3 +1,4 @@
+import importlib.util
 from scatter.scatter_function import ScatterFunction
 from functools import wraps
 import redis
@@ -5,6 +6,7 @@ import redis.asyncio as aredis
 from typing import Callable, List, Optional
 import asyncio
 from scatter.state_manager import state_manager
+import inspect
 
 
 def _load_function(name: str) -> None:
@@ -77,7 +79,7 @@ def init(
     state_manager.initialized = True
 
 
-def register(_func: Callable = None) -> ScatterFunction:
+def track(_func: Callable = None) -> ScatterFunction:
     """
     Decorator to make the function ready for management with `scatter`.
 
@@ -170,16 +172,46 @@ def __flushall():
 
 
 def integrate_app(app):
-    try:
-        import fastapi
-    except ImportError:
+    import importlib
+    if importlib.util.find_spec("fastapi") is None:
         raise ImportError("FastAPI not found, please install it to use this function")
+    
+    import scatter
+    import os
+    from fastapi.routing import APIRoute
 
+    def integration_decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            task = scatter.get(func.__name__)
+            if inspect.iscoroutinefunction(task.func):
+                return await task(*args, **kwargs)
+            else:
+                return task(*args, **kwargs)
+        return wrapper
+
+    # Integrate scatter with the FastAPI app
+    scatter.init(redis_url=os.getenv("REDIS_URL"))
+
+    new_routes = []
     for route in app.routes:
-        if isinstance(route, fastapi.routing.APIRoute):
-            registered_func = register(route.endpoint)
-            route.endpoint = registered_func
+        new_route = route
+        if isinstance(route, APIRoute):
 
-            registered_func.first_push()
+            # Push the original endpoint to scatter in case its not already there
+            track(route.endpoint).first_push()
 
+            new_endpoint = integration_decorator(route.endpoint)
+
+            valid_params = set(inspect.signature(APIRoute.__init__).parameters.keys())
+            route_params = {key: value for key, value in vars(route).items() if key in valid_params}
+            route_params['endpoint'] = new_endpoint
+            
+            # Create a new APIRoute using the original route's attributes and the new endpoint
+            new_route = APIRoute(**route_params)
+
+        new_routes.append(new_route)
+
+    # Replace app.routes with the new routes
+    app.router.routes = new_routes
     return app
