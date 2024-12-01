@@ -9,4 +9,4 @@ async def phased_route_1():
 
 @router.get("/phased/{route_name}")
 async def phased_route_2(route_name: str):
-    return {route_name: "response"}
+    return {route_name: "my name is!"}

@@ -83,6 +83,22 @@ class ScatterFunction:
             )
             await self.apipe.execute()
             self._loaded_version = RESERVED_VERSIONS.INITIAL
+    
+    def sync(self) -> None:
+        latest_version: Union[str, None] = self.latest_version(raw=True)
+
+        # Only do something if the function already exists
+        if latest_version is not None:
+            ser_func: bytes = cloudpickle.dumps(self.func)
+            self.pipe.hset(
+                f"{state_manager.ROOT_PREFIX}:{self.name}",
+                mapping={"ser_func": ser_func, "source": self.source},
+            )
+
+            self.pipe.publish(f"{state_manager.CHANNEL_NAME}:{self.name}", RESERVED_VERSIONS.LATEST)
+
+            self.pipe.execute()
+            self._loaded_version = int(latest_version)
 
     def push(self, update_existing: bool = True) -> None:
         latest_version: Union[str, None] = self.latest_version(raw=True)
