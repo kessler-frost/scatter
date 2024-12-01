@@ -19,7 +19,7 @@ def test_basic_push_pull_delete():
     ]
 
     for o in oath:
-        @scatter.scatter
+        @scatter.register
         def super_func():
             return o
 

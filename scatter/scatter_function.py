@@ -55,6 +55,34 @@ class ScatterFunction:
             )
         )
         return raw_version if raw else int(raw_version)
+    
+    def first_push(self) -> None:
+        latest_version: Union[str, None] = self.latest_version(raw=True)
+
+        # Only do something if the function doesn't exist
+        if latest_version is None:
+            ser_func: bytes = cloudpickle.dumps(self.func)
+            self.pipe.hset(state_manager.FUNC_VERSIONS_HASH_NAME, self.name, RESERVED_VERSIONS.INITIAL)
+            self.pipe.hset(
+                f"{state_manager.ROOT_PREFIX}:{self.name}",
+                mapping={"ser_func": ser_func, "source": self.source},
+            )
+            self.pipe.execute()
+            self._loaded_version = RESERVED_VERSIONS.INITIAL
+    
+    async def afirst_push(self) -> None:
+        latest_version: Union[str, None] = await self.alatest_version(raw=True)
+
+        # Only do something if the function doesn't exist
+        if latest_version is None:
+            ser_func: bytes = cloudpickle.dumps(self.func)
+            await self.apipe.hset(state_manager.FUNC_VERSIONS_HASH_NAME, self.name, RESERVED_VERSIONS.INITIAL)
+            await self.apipe.hset(
+                f"{state_manager.ROOT_PREFIX}:{self.name}",
+                mapping={"ser_func": ser_func, "source": self.source},
+            )
+            await self.apipe.execute()
+            self._loaded_version = RESERVED_VERSIONS.INITIAL
 
     def push(self, update_existing: bool = True) -> None:
         latest_version: Union[str, None] = self.latest_version(raw=True)
@@ -121,6 +149,7 @@ class ScatterFunction:
         self._loaded_version = new_version
 
     def pull(self, version: Optional[int] = None) -> None:
+        # Guard for the upgrade/downgrade borders
         if version == RESERVED_VERSIONS.NO_CHANGE:
             return
 
@@ -164,6 +193,7 @@ class ScatterFunction:
         update_wrapper(self, self.func)
 
     async def apull(self, version: Optional[int] = None) -> None:
+        # Guard for the upgrade/downgrade borders
         if version == RESERVED_VERSIONS.NO_CHANGE:
             return
 

@@ -77,7 +77,7 @@ def init(
     state_manager.initialized = True
 
 
-def scatter(_func: Callable = None) -> ScatterFunction:
+def register(_func: Callable = None) -> ScatterFunction:
     """
     Decorator to make the function ready for management with `scatter`.
 
@@ -90,7 +90,7 @@ def scatter(_func: Callable = None) -> ScatterFunction:
         return a * b
     
     # Now you can either call the function normally
-    # as you would in the absence of `scatter` decorator
+    # as you would in the absence of this decorator
     
     res = sample(2, 21)
     print(res)  # prints 42
@@ -157,3 +157,29 @@ def cleanup():
         asyncio.create_task(state_manager.aredis_client.aclose())
     except RuntimeError:  # In case there's no running loop
         asyncio.run(state_manager.aredis_client.aclose())
+
+
+def __flushall():
+    """
+    Flush all the keys in the redis store.
+    This is a dangerous function and should only be used
+    for testing purposes.
+    """
+
+    state_manager.redis_client.flushall()
+
+
+def integrate_app(app):
+    try:
+        import fastapi
+    except ImportError:
+        raise ImportError("FastAPI not found, please install it to use this function")
+
+    for route in app.routes:
+        if isinstance(route, fastapi.routing.APIRoute):
+            registered_func = register(route.endpoint)
+            route.endpoint = registered_func
+
+            registered_func.first_push()
+
+    return app
