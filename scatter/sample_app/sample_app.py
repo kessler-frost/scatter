@@ -20,12 +20,12 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def read_root():
-    return {"Hello": "Giasd"}
+    return {"Hello": "World"}
 
 
 @app.get("/integration")
 async def fastapi_integration():
-    return {"gigachad": 422}
+    return {"gigachad": 42}
 
 
 app.include_router(router)
