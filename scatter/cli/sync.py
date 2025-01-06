@@ -4,7 +4,6 @@ from types import FunctionType
 from watchfiles import watch
 import scatter
 from typing import List
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 
 def get_module(module_name, file_path):

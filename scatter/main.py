@@ -1,4 +1,5 @@
-import importlib.util
+import os
+from fastapi.routing import APIRoute
 from scatter.scatter_function import ScatterFunction
 from functools import wraps
 import redis
@@ -172,18 +173,11 @@ def __flushall():
 
 
 def integrate_app(app):
-    import importlib
-    if importlib.util.find_spec("fastapi") is None:
-        raise ImportError("FastAPI not found, please install it to use this function")
-    
-    import scatter
-    import os
-    from fastapi.routing import APIRoute
 
     def integration_decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            task = scatter.get(func.__name__)
+            task = get(func.__name__)
             if inspect.iscoroutinefunction(task.func):
                 return await task(*args, **kwargs)
             else:
@@ -191,7 +185,7 @@ def integrate_app(app):
         return wrapper
 
     # Integrate scatter with the FastAPI app
-    scatter.init(redis_url=os.getenv("REDIS_URL"))
+    init(redis_url=os.getenv("REDIS_URL"))
 
     new_routes = []
     for route in app.routes:
