@@ -26,6 +26,5 @@ def read_root():
 async def fastapi_integration():
     return {"gigachad": 42}
 
-
 app.include_router(router)
 app = scatter.integrate_app(app)
