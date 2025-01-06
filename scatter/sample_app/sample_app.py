@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.routing import APIRoute
 import scatter
 from contextlib import asynccontextmanager
 import os
