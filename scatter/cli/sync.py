@@ -58,7 +58,7 @@ def update_functions(module, modified_functions):
 
         processed_function.sync()
 
-    print("Done ✅")
+    print(" Done ✅")
 
 
 def sync_function_changes(module_name, file_path, old_snapshot, valid_functions: List[str]):
@@ -72,8 +72,10 @@ def sync_function_changes(module_name, file_path, old_snapshot, valid_functions:
     new_snapshot = get_function_snapshot(module, valid_functions)
     modified_functions = compare_function_snapshots(old_snapshot, new_snapshot)
 
-    # Update the remote functions
-    update_functions(module, modified_functions)
+    if modified_functions:
+        print(f"Endpoint change detected in {file_path}")
+        # Update the remote functions
+        update_functions(module, modified_functions)
 
     return new_snapshot  # Return the new snapshot for future tracking
 
@@ -94,7 +96,6 @@ def sync_directory(dir_path: str, valid_functions: List[str]):
         for change_type, changed_file in changes:
             if change_type.raw_str() == "modified" and changed_file.endswith(".py"):
                 module_name = Path(changed_file).stem
-                print(f"Detected change in {changed_file}")
 
                 # Get the old snapshot (if available)
                 old_snapshot = module_snapshots.get(module_name, {})

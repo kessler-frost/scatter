@@ -10,8 +10,10 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Delete everything when exiting
+    # [OPTIONAL] Delete everything when exiting
     scatter.main.__flushall()
+    
+    # Perform cleanup, such as closing connections
     scatter.cleanup()
 
 
@@ -19,12 +21,12 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"Arthur": "Dent"}
 
 
 @app.get("/integration")
 async def fastapi_integration():
-    return {"gigachad": 42}
+    return {"Dirk Gently": 42}
 
 app.include_router(router)
 app = scatter.integrate_app(app)
