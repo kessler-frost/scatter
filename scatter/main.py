@@ -29,7 +29,7 @@ def _load_function(name: str) -> None:
 
 def init(
     prefix: Optional[str] = None,
-    auto_updates: bool = True,
+    auto_updates: bool = False,
     redis_url: Optional[str] = None,
     functions_to_preload: Optional[List[str]] = None,
 ) -> None:
@@ -57,6 +57,11 @@ def init(
     # Making this function idempotent
     if state_manager.initialized:
         return
+    
+    if auto_updates and not asyncio.get_event_loop().is_running():
+        raise RuntimeError(
+            "Auto updates require a running asyncio event loop. Please run `asyncio.run` or `asyncio.create_task`"
+        )
 
     state_manager.prefix = prefix or "hal-jordan"
     state_manager.auto_updates = auto_updates
@@ -185,7 +190,7 @@ def integrate_app(app):
         return wrapper
 
     # Integrate scatter with the FastAPI app
-    init(redis_url=os.getenv("REDIS_URL"))
+    init(redis_url=os.getenv("REDIS_URL"), auto_updates=True)
 
     new_routes = []
     for route in app.routes:

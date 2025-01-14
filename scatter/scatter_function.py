@@ -263,6 +263,9 @@ class ScatterFunction:
             latest_version = int(latest_version)
 
             if older_than is None:
+                # Delete the loaded function
+                del state_manager.loaded_functions[self.name]
+                
                 # Delete all
                 self.pipe.hdel(state_manager.FUNC_VERSIONS_HASH_NAME, self.name)
                 self.pipe.delete(f"{state_manager.ROOT_PREFIX}:{self.name}")
@@ -291,6 +294,9 @@ class ScatterFunction:
             latest_version = int(latest_version)
 
             if older_than is None:
+                # Delete the loaded function
+                del state_manager.loaded_functions[self.name]
+                
                 # Delete all
                 await self.apipe.hdel(state_manager.FUNC_VERSIONS_HASH_NAME, self.name)
                 await self.apipe.delete(f"{state_manager.ROOT_PREFIX}:{self.name}")
