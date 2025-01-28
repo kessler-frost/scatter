@@ -6,8 +6,8 @@
 
 NOTE: This project is currently under heavy development and should be considered pre-alpha
 
-Redis backed live-reloadable function management in Python.
-Edit remote functions in real-time.
+Live-reloadable function management in Python.
+Edit remote functions with no downtime.
 
 ## Features
 
