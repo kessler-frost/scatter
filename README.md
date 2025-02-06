@@ -4,7 +4,17 @@
 
 </div>
 
+NOTE: This project is currently under heavy development and should be considered pre-alpha
+
 Live-reloadable remote function management in Python.
+Edit remote functions with no downtime.
+
+## Features
+
+1. Function level version control
+2. Update function definitions for already deployed apps without redeploying
+3. Lightweight with very few dependencies
+4. Minimal network bandwidth usage
 
 ## Installation
 
