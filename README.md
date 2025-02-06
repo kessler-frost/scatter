@@ -6,7 +6,7 @@
 
 NOTE: This project is currently under heavy development and should be considered pre-alpha
 
-Live-reloadable function management in Python.
+Live-reloadable remote function management in Python.
 Edit remote functions with no downtime.
 
 ## Features
@@ -18,7 +18,7 @@ Edit remote functions with no downtime.
 
 ## Installation
 
-```
+```bash
 pip install scatter
 ```
 
