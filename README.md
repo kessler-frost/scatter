@@ -134,6 +134,99 @@ err_func = scatter.get("sample_task_1")
 
 ```
 
+## FastAPI integration
+
+[NOTE] The assumption in this example is that there is either an env variable `REDIS_URL` already set which contains the location of a running Redis or a Redis compatible key/value store, or the same is already running at localhost:6379.
+
+`scatter` can now be integrated with your FastAPI app by using the function `scatter.integrate_app` on the `app` object that you create when defining a FastAPI app. For a sample use case, look at the `sample_app/sample_app.py` file:
+
+Let's define some FastAPI routes - `sample_router.py`:
+
+```python
+from fastapi.routing import APIRouter
+
+router = APIRouter()
+
+
+@router.get("/phased/route_1")
+async def phased_route_1():
+    return {"route_1": "response"}
+
+
+@router.get("/phased/{route_name}")
+async def phased_route_2(route_name: str):
+    return {route_name: "my name is!"}
+
+
+async def not_an_endpoint():
+    return "I'm not an endpoint!"
+```
+
+In a separate file, let's define our FastAPI application with endpoints `read_root` and `fastapi_integration` - `sample_app.py`:
+
+```python
+from fastapi import FastAPI
+import scatter
+from sample_router import router
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"Arthur": "Dent"}
+
+
+@app.get("/integration")
+async def fastapi_integration():
+    return {"Dirk Gently": 42}
+
+app.include_router(router)
+
+app = scatter.integrate_app(app)
+```
+
+As you can see, we are combining everything into a `FastAPI()` object named `app` in this case. Now look at the last line which calls `scatter.integrate_app`, it essentially takes in that `app` object and registers all of the endpoint functions in the app to `scatter` and then returns the app.
+
+Now you can run the app as you normally would, let's say we use FastAPI's own cli command `fastapi run` in a terminal:
+
+```bash
+fastapi run .
+```
+
+Now if you go to localhost:8000 you'll get a response:
+
+```json
+{
+    "Arthur": "Dent"
+}
+```
+
+Now, in a separate terminal in the same directory of `sample_app` if we do:
+
+```bash
+scatter sync . sample_app.py
+```
+
+And we update the `read_root` function in `sample_app.py` and save the file:
+
+```python
+...
+@app.get("/")
+def read_root():
+    return {"Clark": "Kent"}
+...
+```
+
+And go to localhost:8000 again, we'll see that the response has changed to:
+
+```json
+{
+    "Clark": "Kent"
+}
+```
+
+This is a very simple use case of what you can do. Also, let's say you had deplpoyed your app across multiple containers/machines, all of those would be updated as soon as you save your `sample_app.py`. This gives you a lot of power over deploying your apps and making changes to it afterwards without having to redo the entire deployment again and again.
+
 ## How is it different than doing [`fastapi dev`](https://fastapi.tiangolo.com/#run-it)?
 
 `fastapi dev` can only update 1 locally running instance of the app, even then it has to shut down and reload the entire app if you change anything in the files that it's watching, for example, say you update the `sample_router.py` file as:
