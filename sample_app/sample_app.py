@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import scatter
-from scatter.sample_app.sample_router import router
+from sample_router import router
 
 app = FastAPI()
 

@@ -1,5 +1,6 @@
 import os
 from fastapi.routing import APIRoute
+from fastapi import FastAPI
 from scatter.scatter_function import ScatterFunction
 from functools import wraps
 import redis
@@ -177,7 +178,7 @@ def __flushall():
     state_manager.redis_client.flushall()
 
 
-def integrate_app(app):
+def integrate_app(app) -> FastAPI:
 
     def integration_decorator(func):
         @wraps(func)

@@ -134,6 +134,40 @@ err_func = scatter.get("sample_task_1")
 
 ```
 
+## How is it different than doing [`fastapi dev`](https://fastapi.tiangolo.com/#run-it)?
+
+`fastapi dev` can only update 1 locally running instance of the app, even then it has to shut down and reload the entire app if you change anything in the files that it's watching, for example, say you update the `sample_router.py` file as:
+
+```python
+from fastapi.routing import APIRouter
+
+router = APIRouter()
+
+
+@router.get("/phased/route_1")
+async def phased_route_1():
+    return {"route_1": "response"}
+
+
+@router.get("/phased/{route_name}")
+async def phased_route_2(route_name: str):
+    return {route_name: "my name is!"}
+
+
+async def not_an_endpoint():
+    # return "I'm not an endpoint!"
+    # ^^^^^^ previously ^^^^^^^^^^
+    return "yellow! I'm a changed function!"
+    # ^^^^^^ updated ^^^^^^^^^^^^^
+
+```
+
+In the above case `fastapi dev` will still restart the app even though nothing related to any of the endpoints has changed. Whereas `scatter sync` will not perform the updates - and it never restarts the app as well as updates all of the running instances of the app simultaneously instead of just 1 local instance.
+
+### Caveat
+
+The current caveat of that would be let's say `not_an_endpoint` function was being called inside `phased_route_1`, the updates to the former will not propagate to the app instances since it is not a registered endpoint - hence indirectly failing to update the actual workings of the `phased_route_1` function. I know about this and am figuring out a way to fix it.
+
 ## License
 
 This project is licensed under [MIT](https://github.com/kessler-frost/scatter?tab=MIT-1-ov-file#readme)
