@@ -5,18 +5,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scatter"
-dynamic = ["version"]
-description = "Live-reloadable remote function management in Python"
-readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-    "cloudpickle>=3.1.1",
-    "fastapi[standard]>=0.115.8",
-    "redis[hiredis]>=5.2.1",
-]
+dynamic = ["version", "dependencies"]
+requires-python = ">= 3.10"
 authors = [
     {name = "Sankalp Sanand"},
 ]
+description = "Redis backed live-reloadable function management in Python"
+readme = "README.md"
 keywords = ["redis", "lightweight", "function", "management", "live-reload", "scatter"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -46,3 +41,4 @@ exclude = ["*.ipynb", "**/*.ipynb", "tests"]
 
 [tool.setuptools.dynamic]
 version = {file = "VERSION"}
+dependencies = {file = "requirements.txt"}

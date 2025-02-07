@@ -1,3 +1,0 @@
-redis[hiredis]
-cloudpickle
-fastapi[standard]
