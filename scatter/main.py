@@ -1,3 +1,6 @@
+import os
+from fastapi.routing import APIRoute
+from fastapi import FastAPI
 from scatter.scatter_function import ScatterFunction
 from functools import wraps
 import redis
@@ -5,6 +8,7 @@ import redis.asyncio as aredis
 from typing import Callable, List, Optional
 import asyncio
 from scatter.state_manager import state_manager
+import inspect
 
 
 def _load_function(name: str) -> None:
@@ -26,7 +30,7 @@ def _load_function(name: str) -> None:
 
 def init(
     prefix: Optional[str] = None,
-    auto_updates: bool = True,
+    auto_updates: bool = False,
     redis_url: Optional[str] = None,
     functions_to_preload: Optional[List[str]] = None,
 ) -> None:
@@ -54,6 +58,11 @@ def init(
     # Making this function idempotent
     if state_manager.initialized:
         return
+    
+    if auto_updates and not asyncio.get_event_loop().is_running():
+        raise RuntimeError(
+            "Auto updates require a running asyncio event loop. Please run `asyncio.run` or `asyncio.create_task`"
+        )
 
     state_manager.prefix = prefix or "hal-jordan"
     state_manager.auto_updates = auto_updates
@@ -77,7 +86,7 @@ def init(
     state_manager.initialized = True
 
 
-def scatter(_func: Callable = None) -> ScatterFunction:
+def track(_func: Callable = None) -> ScatterFunction:
     """
     Decorator to make the function ready for management with `scatter`.
 
@@ -90,7 +99,7 @@ def scatter(_func: Callable = None) -> ScatterFunction:
         return a * b
     
     # Now you can either call the function normally
-    # as you would in the absence of `scatter` decorator
+    # as you would in the absence of this decorator
     
     res = sample(2, 21)
     print(res)  # prints 42
@@ -157,3 +166,52 @@ def cleanup():
         asyncio.create_task(state_manager.aredis_client.aclose())
     except RuntimeError:  # In case there's no running loop
         asyncio.run(state_manager.aredis_client.aclose())
+
+
+def __flushall():
+    """
+    Flush all the keys in the redis store.
+    This is a dangerous function and should only be used
+    for testing purposes.
+    """
+
+    state_manager.redis_client.flushall()
+
+
+def integrate_app(app) -> FastAPI:
+
+    def integration_decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            task = get(func.__name__)
+            if inspect.iscoroutinefunction(task.func):
+                return await task(*args, **kwargs)
+            else:
+                return task(*args, **kwargs)
+        return wrapper
+
+    # Integrate scatter with the FastAPI app
+    init(redis_url=os.getenv("REDIS_URL"), auto_updates=True)
+
+    new_routes = []
+    for route in app.routes:
+        new_route = route
+        if isinstance(route, APIRoute):
+
+            # Push the original endpoint to scatter in case its not already there
+            track(route.endpoint).first_push()
+
+            new_endpoint = integration_decorator(route.endpoint)
+
+            valid_params = set(inspect.signature(APIRoute.__init__).parameters.keys())
+            route_params = {key: value for key, value in vars(route).items() if key in valid_params}
+            route_params['endpoint'] = new_endpoint
+            
+            # Create a new APIRoute using the original route's attributes and the new endpoint
+            new_route = APIRoute(**route_params)
+
+        new_routes.append(new_route)
+
+    # Replace app.routes with the new routes
+    app.router.routes = new_routes
+    return app
