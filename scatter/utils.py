@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 
 ASYNC_SLEEP_TIME = 0.001
@@ -10,7 +10,7 @@ class RESERVED_VERSIONS:
     INITIAL = 1
 
 
-def safe_decode(obj: bytes) -> Any:
+def safe_decode(obj: Union[bytes, Any]) -> Any:
     try:
         return obj.decode()
     except Exception:

@@ -12,9 +12,13 @@ class ScatterFunction:
         self, name: Optional[str] = None, func: Optional[Callable] = None
     ) -> None:
         self.redis_client = state_manager.redis_client
+        if self.redis_client is None:
+            raise RuntimeError("state_manager.redis_client is not initialized")
         self.pipe = self.redis_client.pipeline()
 
         self.aredis_client = state_manager.aredis_client
+        if self.aredis_client is None:
+            raise RuntimeError("state_manager.aredis_client is not initialized")
         self.apipe = self.aredis_client.pipeline()
 
         if not func and not name:
@@ -24,10 +28,10 @@ class ScatterFunction:
         self.func = func
         self._source = None
 
-        if self.func:
+        if self.func is not None:
             # Update the name to function's name irrespective of the passed in name
-            self.name = func.__name__
-            self._source = inspect.getsource(func)
+            self.name = self.func.__name__
+            self._source = inspect.getsource(self.func)
 
         self._loaded_version = None
 
@@ -55,7 +59,7 @@ class ScatterFunction:
             )
         )
         return raw_version if raw else int(raw_version)
-    
+
     def first_push(self) -> None:
         latest_version: Union[str, None] = self.latest_version(raw=True)
 
@@ -69,7 +73,7 @@ class ScatterFunction:
             )
             self.pipe.execute()
             self._loaded_version = RESERVED_VERSIONS.INITIAL
-    
+
     async def afirst_push(self) -> None:
         latest_version: Union[str, None] = await self.alatest_version(raw=True)
 
@@ -83,7 +87,7 @@ class ScatterFunction:
             )
             await self.apipe.execute()
             self._loaded_version = RESERVED_VERSIONS.INITIAL
-    
+
     def sync(self) -> None:
         latest_version: Union[str, None] = self.latest_version(raw=True)
 
@@ -265,7 +269,7 @@ class ScatterFunction:
             if older_than is None:
                 # Delete the loaded function
                 del state_manager.loaded_functions[self.name]
-                
+
                 # Delete all
                 self.pipe.hdel(state_manager.FUNC_VERSIONS_HASH_NAME, self.name)
                 self.pipe.delete(f"{state_manager.ROOT_PREFIX}:{self.name}")
@@ -286,7 +290,7 @@ class ScatterFunction:
                 self.pipe.delete(*[f"{state_manager.ROOT_PREFIX}:{self.name}:{version}" for version in range(RESERVED_VERSIONS.INITIAL, older_than)])
 
             self.pipe.execute()
-    
+
     async def adelete(self, older_than: Optional[int] = None) -> None:
         latest_version = await self.alatest_version(raw=True)
         if latest_version is not None:
@@ -296,7 +300,7 @@ class ScatterFunction:
             if older_than is None:
                 # Delete the loaded function
                 del state_manager.loaded_functions[self.name]
-                
+
                 # Delete all
                 await self.apipe.hdel(state_manager.FUNC_VERSIONS_HASH_NAME, self.name)
                 await self.apipe.delete(f"{state_manager.ROOT_PREFIX}:{self.name}")
