@@ -36,19 +36,19 @@ def init(
 ) -> None:
     """
     Initialize and set up `scatter`
-    
+
     Args:
         prefix: Prefix to use to determine which set of functions does the user wants to operate upon.
                 For e.g. there might be 2 `sample_task`'s saved. One belonging to `red_project` and
                 another to `blue_project` in the same Redis store, by specifying `prefix="red_project"`
                 only that set of functions will be operated upon.
-                
+
                 This can also be used as a way to denote which user's functions should be used in case you have
                 a shared Redis store with other users, using `prefix=Thor` or `prefix=Steve`.
 
         auto_updates: Automatically update the loaded function if a new version of it is pushed.
                       Requires a running asyncio event loop.
-        
+
         redis_url: Redis url to use in case a redis instance is deployed somewhere other than localhost:6379
 
         functions_to_preload: List of function names that can be preloaded to save some time for the first `scatter.get`
@@ -58,7 +58,7 @@ def init(
     # Making this function idempotent
     if state_manager.initialized:
         return
-    
+
     if auto_updates and not asyncio.get_event_loop().is_running():
         raise RuntimeError(
             "Auto updates require a running asyncio event loop. Please run `asyncio.run` or `asyncio.create_task`"
@@ -86,7 +86,7 @@ def init(
     state_manager.initialized = True
 
 
-def track(_func: Callable = None) -> ScatterFunction:
+def track(_func: Optional[Callable] = None) -> ScatterFunction:
     """
     Decorator to make the function ready for management with `scatter`.
 
@@ -97,23 +97,23 @@ def track(_func: Callable = None) -> ScatterFunction:
     @scatter
     def sample(a: int, b: int):
         return a * b
-    
+
     # Now you can either call the function normally
     # as you would in the absence of this decorator
-    
+
     res = sample(2, 21)
     print(res)  # prints 42
 
     # Or you save/update the function definition by `push`
-    
+
     sample.push()
 
     # Or load the most up to date function definition by `pull`
-    
+
     sample.pull()
 
     # You can also specify which particular version you would like to load
-    
+
     sample.pull(version=1)
 
     ```
@@ -123,13 +123,13 @@ def track(_func: Callable = None) -> ScatterFunction:
     """
 
     scatter_obj = ScatterFunction(func=_func)
-    return wraps(_func)(scatter_obj)
+    return scatter_obj
 
 
 def get(name: str) -> ScatterFunction:
     """
     Get the callable function by name.
-    
+
     This first checks whether the function is already in memory
     then returns that, otherwise pulls from the redis store and loads
     into memory for current, and future uses.
@@ -143,7 +143,10 @@ def get(name: str) -> ScatterFunction:
 
     if name not in state_manager.loaded_functions:
         _load_function(name)
-    return state_manager.loaded_functions.get(name)
+    func = state_manager.loaded_functions.get(name)
+    if func is None:
+        raise ValueError(f"Function '{name}' not found in loaded functions.")
+    return func
 
 
 def cleanup():
@@ -162,10 +165,11 @@ def cleanup():
     state_manager.loaded_functions.clear()
 
     # Async client requires manual closing
-    try:
-        asyncio.create_task(state_manager.aredis_client.aclose())
-    except RuntimeError:  # In case there's no running loop
-        asyncio.run(state_manager.aredis_client.aclose())
+    if state_manager.aredis_client is not None:
+        try:
+            asyncio.create_task(state_manager.aredis_client.aclose())
+        except RuntimeError:  # In case there's no running loop
+            asyncio.run(state_manager.aredis_client.aclose())
 
 
 def __flushall():
@@ -175,7 +179,10 @@ def __flushall():
     for testing purposes.
     """
 
-    state_manager.redis_client.flushall()
+    if state_manager.redis_client is not None:
+        state_manager.redis_client.flushall()
+    else:
+        raise RuntimeError("Redis client is not initialized. Please call init() first.")
 
 
 def integrate_app(app) -> FastAPI:
@@ -206,7 +213,7 @@ def integrate_app(app) -> FastAPI:
             valid_params = set(inspect.signature(APIRoute.__init__).parameters.keys())
             route_params = {key: value for key, value in vars(route).items() if key in valid_params}
             route_params['endpoint'] = new_endpoint
-            
+
             # Create a new APIRoute using the original route's attributes and the new endpoint
             new_route = APIRoute(**route_params)
 

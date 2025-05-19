@@ -31,7 +31,7 @@ class StateManager:
 
     @property
     def ROOT_PREFIX(self):
-        return ":".join([self._ROOT_PREFIX, self.prefix])
+        return ":".join([self._ROOT_PREFIX, self.prefix or ""])
 
     @property
     def FUNC_VERSIONS_HASH_NAME(self):
