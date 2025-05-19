@@ -13,6 +13,8 @@ def get_module(module_name, file_path):
     try:
 
         spec = importlib.util.spec_from_file_location(module_name, file_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Cannot load spec for module {module_name} from {file_path}")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
@@ -65,7 +67,7 @@ def sync_function_changes(module_name, file_path, old_snapshot, valid_functions:
     """
     Reload a module from a specific file path, detect function modifications, and update the remote function.
     """
-    
+
     module = get_module(module_name, file_path)
 
     # Take a new snapshot of functions and compare
