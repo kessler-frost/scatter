@@ -7,7 +7,6 @@
 NOTE: This project is currently under heavy development and should be considered pre-alpha
 
 Live-reloadable remote function management in Python.
-Edit remote functions with no downtime.
 
 ## Features
 
